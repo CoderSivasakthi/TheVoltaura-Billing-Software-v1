@@ -1,0 +1,114 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# Solar Billing SaaS — Docker Compose
+#
+# Usage: docker-compose up --build
+# Access: http://localhost
+#
+# Services: nginx (proxy) → frontend (React) → node-backend (BFF) → spring-service (Spring Boot)
+# Database: Supabase PostgreSQL (external cloud — not containerized)
+# Network:  solar-net (internal bridge)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Shared network — all containers communicate by service name (internal DNS)
+# ──────────────────────────────────────────────────────────────────────────────
+networks:
+  solar-net:
+    driver: bridge
+    name: solar-net
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Services
+# ──────────────────────────────────────────────────────────────────────────────
+services:
+
+  # ── 1. React Frontend ────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: solar-frontend
+    restart: unless-stopped
+    networks:
+      - solar-net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/healthz"]
+      interval: 30s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
+    # Internal only — not exposed to host directly (Nginx is the entry point)
+
+  # ── 2. Nginx Reverse Proxy ───────────────────────────────────────────────────
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: solar-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    networks:
+      - solar-net
+    depends_on:
+      frontend:
+        condition: service_healthy
+      node-backend:
+        condition: service_healthy
+      spring-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/nginx-health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+
+  # ── 3. Node.js Express BFF ───────────────────────────────────────────────────
+  node-backend:
+    build:
+      context: .
+      dockerfile: node-backend/Dockerfile
+    container_name: solar-node-backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - PORT=5001
+    networks:
+      - solar-net
+    depends_on:
+      spring-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:5001/api/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 25s
+      retries: 5
+    # NOT exposed to host — accessed only through Nginx at /api/*
+
+  # ── 4. Spring Boot Microservice ──────────────────────────────────────────────
+  spring-service:
+    build:
+      context: ./spring-microservice
+      dockerfile: Dockerfile
+    container_name: solar-spring-service
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-docker}
+      - SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL}
+      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
+    networks:
+      - solar-net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8081/spring/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 90s
+      retries: 5
+    # NOT exposed to host — accessed only through Nginx at /spring/*

@@ -1,0 +1,11 @@
+# Frontend build artifacts
+node_modules/
+dist/
+.DS_Store
+
+# Dev files
+.env*
+*.log
+
+# Docker helper files (needed for build)
+# docker/ 

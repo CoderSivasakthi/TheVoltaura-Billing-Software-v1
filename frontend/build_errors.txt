@@ -1,0 +1,31 @@
+
+> frontend@0.0.0 build
+> tsc -b && vite build
+
+src/components/Loader.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/pages/CreateInvoice.tsx(3,22): error TS6133: 'Trash2' is declared but its value is never read.
+src/pages/CreateInvoice.tsx(3,30): error TS6133: 'HelpCircle' is declared but its value is never read.
+src/pages/CreateInvoice.tsx(3,42): error TS6133: 'FileText' is declared but its value is never read.
+src/pages/CreateInvoice.tsx(3,52): error TS6133: 'CheckCircle' is declared but its value is never read.
+src/pages/CreateInvoice.tsx(3,65): error TS6133: 'Percent' is declared but its value is never read.
+src/pages/CreateInvoice.tsx(3,74): error TS6133: 'ArrowRight' is declared but its value is never read.
+src/pages/CreateInvoice.tsx(27,12): error TS6133: 'subtotalOffset' is declared but its value is never read.
+src/pages/CreateInvoice.tsx(27,28): error TS6133: 'setSubtotalOffset' is declared but its value is never read.
+src/pages/CreateInvoice.tsx(282,34): error TS2552: Cannot find name 'Settings'. Did you mean 'settings'?
+src/pages/CreateInvoice.tsx(347,212): error TS2304: Cannot find name 'Copy'.
+src/pages/CreateInvoice.tsx(348,210): error TS2304: Cannot find name 'X'.
+src/pages/CreateInvoice.tsx(439,362): error TS2304: Cannot find name 'Save'.
+src/pages/CreateQuotation.tsx(3,50): error TS6133: 'Search' is declared but its value is never read.
+src/pages/CreateQuotation.tsx(3,64): error TS6133: 'Trash2' is declared but its value is never read.
+src/pages/CreateQuotation.tsx(3,72): error TS6133: 'FileText' is declared but its value is never read.
+src/pages/CreateQuotation.tsx(3,82): error TS6133: 'CheckCircle' is declared but its value is never read.
+src/pages/CreateQuotation.tsx(3,104): error TS6133: 'PenTool' is declared but its value is never read.
+src/pages/CreateQuotation.tsx(3,113): error TS6133: 'Battery' is declared but its value is never read.
+src/pages/CreateQuotation.tsx(3,122): error TS6133: 'Cable' is declared but its value is never read.
+src/pages/CreateQuotation.tsx(371,79): error TS2304: Cannot find name 'Upload'.
+src/pages/CreateQuotation.tsx(439,212): error TS2304: Cannot find name 'Copy'.
+src/pages/CreateQuotation.tsx(440,210): error TS2304: Cannot find name 'X'.
+src/pages/CreateQuotation.tsx(456,30): error TS2304: Cannot find name 'AlignLeft'.
+src/pages/CreateQuotation.tsx(468,34): error TS2304: Cannot find name 'Upload'.
+src/pages/ViewInvoice.tsx(130,12): error TS6133: 'signature' is declared but its value is never read.
+src/pages/ViewInvoice.tsx(130,23): error TS6133: 'setSignature' is declared but its value is never read.

@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="en" data-font-size="md" data-lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SolarOps — Solar Billing &amp; ERP</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="/node_modules/chart.js/dist/chart.umd.min.js"></script>
+  <script src="/node_modules/lucide/dist/umd/lucide.min.js"></script>
+</head>
+<body>
+<div class="app">
+
+<!-- ══════════════ SIDEBAR ══════════════ -->
+<aside class="sidebar" id="sidebar">
+  <div class="sb-logo">
+    <div class="li"><i data-lucide="sun" style="width:18px;height:18px;color:#fff"></i></div>
+    <div><div class="ln">SolarOps</div><div class="ls">Enterprise ERP</div></div>
+  </div>
+  <div class="sb-user">
+    <div class="av avc-3" id="sbAvatar">AM</div>
+    <div><div class="un" id="sbUserName">Alex Morgan</div><div class="ur">Admin</div></div>
+  </div>
+  <nav class="sb-nav">
+    <div class="sb-sec">Menu</div>
+    <button class="nav-it active" data-page="dashboard"><i data-lucide="layout-dashboard" class="ni"></i>Dashboard</button>
+    <button class="nav-it" data-page="customers"><i data-lucide="users" class="ni"></i>Customers</button>
+    <button class="nav-it" data-page="quotations"><i data-lucide="file-text" class="ni"></i>Quotations</button>
+    <button class="nav-it" data-page="invoices"><i data-lucide="receipt" class="ni"></i>Invoices</button>
+    <button class="nav-it" data-page="payments"><i data-lucide="credit-card" class="ni"></i>Payments</button>
+    <button class="nav-it" data-page="products"><i data-lucide="package" class="ni"></i>Products</button>
+    <div class="sb-sec">Operations</div>
+    <button class="nav-it" data-page="amc"><i data-lucide="wrench" class="ni"></i>AMC Contracts<span class="nb" id="sbAmcBadge" style="display:none">0</span></button>
+    <button class="nav-it" data-page="reports"><i data-lucide="bar-chart-2" class="ni"></i>Reports</button>
+    <button class="nav-it" data-page="settings"><i data-lucide="settings" class="ni"></i>Settings</button>
+  </nav>
+  <div class="sb-footer">
+    <div class="brand-credits">
+      <div class="copyright">&copy; 2026 SolarOps ERP</div>
+      <div class="developer">Developed by <span class="dv-name">AmarLogicLabs</span></div>
+    </div>
+    <button class="nav-it" id="supportBtn"><i data-lucide="help-circle" class="ni"></i>Help &amp; Support</button>
+    <button class="nav-it" id="logoutBtn"><i data-lucide="log-out" class="ni"></i>Log Out</button>
+  </div>
+</aside>
+<!-- Sidebar overlay for mobile -->
+<div class="sb-overlay" id="sbOverlay"></div>
+
+<!-- ══════════════ MAIN ══════════════ -->
+<div class="main">
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <button class="sb-toggle" id="sidebarToggle"><i data-lucide="menu"></i></button>
+  <div class="tb-brand">
+    <div class="ti"><i data-lucide="sun" style="width:16px;height:16px;color:#fff"></i></div>
+    <span class="tn">SolarOps</span>
+  </div>
+  <div class="tb-search">
+    <i data-lucide="search" class="si"></i>
+    <input type="text" id="globalSearch" placeholder="Search customers, quotes, invoices...">
+  </div>
+  <div class="tb-right">
+    <div style="position:relative">
+      <button class="tb-icon-btn" id="notifBtn" title="Notifications"><i data-lucide="bell"></i><span class="notif-dot" id="notifDot"></span></button>
+      <!-- Notification dropdown -->
+      <div class="notif-panel" id="notifPanel">
+        <div class="notif-hdr"><span class="notif-title">Notifications</span><button class="notif-clear" id="clearNotifBtn">Clear all</button></div>
+        <div id="notifList"></div>
+      </div>
+    </div>
+    <!-- Font Size Control -->
+    <div style="position:relative">
+      <button class="tb-icon-btn" id="fontSizeBtn" title="Font Size"><span style="font-weight:800;font-size:16px">A</span></button>
+      <div class="notif-panel" id="fontPanel" style="width:160px;right:-10px">
+        <div style="padding:10px;display:flex;flex-direction:column;gap:4px">
+          <button class="fs-btn" data-fs="sm" onclick="applyFontSize('sm');document.getElementById('fontPanel').classList.remove('open')">A<small>-</small> <span style="font-size:11px;margin-left:auto">(Small)</span></button>
+          <button class="fs-btn active" data-fs="md" onclick="applyFontSize('md');document.getElementById('fontPanel').classList.remove('open')">A <span style="font-size:11px;margin-left:auto">(Normal)</span></button>
+          <button class="fs-btn" data-fs="lg" onclick="applyFontSize('lg');document.getElementById('fontPanel').classList.remove('open')">A<small>+</small> <span style="font-size:11px;margin-left:auto">(Large)</span></button>
+          <button class="fs-btn" data-fs="xl" onclick="applyFontSize('xl');document.getElementById('fontPanel').classList.remove('open')">A<sup>XL</sup> <span style="font-size:11px;margin-left:auto">(X-Large)</span></button>
+        </div>
+      </div>
+    </div>
+    <!-- Language Selector -->
+    <div style="position:relative">
+      <button class="btn btn-secondary" id="langDropBtn" style="padding:6px 12px;height:36px;font-size:12px" title="Language">English ▼</button>
+      <div class="notif-panel" id="langPanel" style="width:130px;right:0">
+        <div style="padding:10px;display:flex;flex-direction:column;gap:4px">
+          <button class="fs-btn" data-lang="en" onclick="applyLang('en');document.getElementById('langPanel').classList.remove('open');document.getElementById('langDropBtn').textContent='English ▼'">English</button>
+          <button class="fs-btn" data-lang="ta" onclick="applyLang('ta');document.getElementById('langPanel').classList.remove('open');document.getElementById('langDropBtn').textContent='Tamil ▼'">Tamil</button>
+          <button class="fs-btn" data-lang="hi" onclick="applyLang('hi');document.getElementById('langPanel').classList.remove('open');document.getElementById('langDropBtn').textContent='Hindi ▼'">Hindi</button>
+        </div>
+      </div>
+    </div>
+    <button class="tb-icon-btn" id="settingsBtn" title="Settings" style="display:none"><i data-lucide="settings"></i></button>
+    <div class="tb-sep"></div>
+    <div class="tb-user-info">
+      <div class="tun" id="tbUserName">Alex Morgan</div>
+      <div class="tur">Admin</div>
+    </div>
+    <div class="tb-avatar avc-3" id="tbAvatar">AM</div>
+  </div>
+</header>
+
+<!-- ══════════════ SETTINGS DRAWER ══════════════ -->
+<div class="settings-drawer" id="settingsDrawer">
+  <div class="sd-hdr">
+    <span class="sd-title"><i data-lucide="settings" style="width:16px"></i> Settings</span>
+    <button class="sd-close" id="settingsClose"><i data-lucide="x"></i></button>
+  </div>
+  <div class="sd-body">
+    <div class="sd-sec">Appearance</div>
+    <div class="sd-row"><label class="sd-lbl">Font Size</label>
+      <div class="fs-btns">
+        <button class="fs-btn" data-fs="sm">A<small>-</small></button>
+        <button class="fs-btn active" data-fs="md">A</button>
+        <button class="fs-btn" data-fs="lg">A<small>+</small></button>
+        <button class="fs-btn" data-fs="xl">A<sup>XL</sup></button>
+      </div>
+    </div>
+    <div class="sd-sec">Language</div>
+    <div class="sd-row"><label class="sd-lbl">Interface Language</label>
+      <select class="fi" id="langSelect" style="max-width:160px">
+        <option value="en">English</option>
+        <option value="ta">Tamil</option>
+        <option value="hi">Hindi</option>
+      </select>
+    </div>
+    <div class="sd-sec">Company</div>
+    <div class="sd-row fd">
+      <label class="fl">Company Name</label><input class="fi" id="sdOrgName" value="TheVoltaura Private ltd">
+    </div>
+    <div class="sd-row fd">
+      <label class="fl">GST Number</label><input class="fi" id="sdOrgGst" value="33AAAAA0000A1Z5">
+    </div>
+    <div class="sd-row fd">
+      <label class="fl">Support Email</label><input class="fi" id="sdOrgEmail" type="email" value="contact@thevoltaura.com">
+    </div>
+    <div class="sd-row fd">
+      <label class="fl">Phone</label><input class="fi" id="sdOrgPhone" value="+91 90255 96481">
+    </div>
+    <div class="sd-sec">Notifications</div>
+    <label class="fcheck sd-row"><input type="checkbox" checked id="notifLowStock"><span class="fcheck-label">Low stock alerts</span></label>
+    <label class="fcheck sd-row"><input type="checkbox" checked id="notifOverdue"><span class="fcheck-label">Overdue invoice alerts</span></label>
+    <label class="fcheck sd-row"><input type="checkbox" checked id="notifAmc"><span class="fcheck-label">AMC expiry alerts</span></label>
+    <button class="btn btn-primary btn-full" style="margin-top:16px" onclick="saveSettings()">Save Settings</button>
+  </div>
+</div>
+<div class="sd-overlay" id="sdOverlay"></div>
+
+<!-- ══════════════ SUPPORT MODAL ══════════════ -->
+<div class="modal" id="supportModal">
+  <div class="mc" style="max-width:540px">
+    <div class="mh"><h3><i data-lucide="help-circle" style="width:18px;vertical-align:middle"></i> Help &amp; Support</h3><button class="mc-close" onclick="closeModal('supportModal')"><i data-lucide="x"></i></button></div>
+    <div class="mb">
+      <div class="supp-tabs"><button class="supp-tab active" data-tab="faq">FAQ</button><button class="supp-tab" data-tab="contact">Contact Us</button><button class="supp-tab" data-tab="shortcuts">Shortcuts</button></div>
+      <div class="supp-body" id="suppFaq">
+        <div class="faq-item"><div class="faq-q">How do I create an invoice?</div><div class="faq-a">Go to Invoices page → click &ldquo;New Invoice&rdquo; → select a customer, add products, then click Save Invoice.</div></div>
+        <div class="faq-item"><div class="faq-q">How do I convert a quotation to invoice?</div><div class="faq-a">Open Quotations → click &ldquo;Convert&rdquo; in the Actions column, or click &ldquo;Convert to Invoice&rdquo; on the Create Quotation form.</div></div>
+        <div class="faq-item"><div class="faq-q">How do I record a payment?</div><div class="faq-a">Open an invoice → click &ldquo;Record Payment&rdquo;, or go to Payments → &ldquo;+ Record Payment&rdquo;.</div></div>
+        <div class="faq-item"><div class="faq-q">How do I export a report?</div><div class="faq-a">Go to Reports page → click &ldquo;Export Report&rdquo; button at the top right.</div></div>
+        <div class="faq-item"><div class="faq-q">How to change font size?</div><div class="faq-a">Click the Settings icon ( ⚙ ) in the top bar → choose your preferred font size under Appearance.</div></div>
+      </div>
+      <div class="supp-body" id="suppContact" style="display:none">
+        <div class="supp-contact-card"><i data-lucide="phone" style="color:var(--green)"></i><div><div style="font-weight:600">Phone Support</div><div style="color:var(--g400);font-size:12px">Mon–Sat, 9AM–6PM</div><a href="tel:+919025596481" style="color:var(--orange);font-weight:600">+91 90255 96481</a></div></div>
+        <div class="supp-contact-card"><i data-lucide="mail" style="color:var(--blue)"></i><div><div style="font-weight:600">Email Support</div><div style="color:var(--g400);font-size:12px">Response within 24 hrs</div><a href="mailto:contact@thevoltaura.com" style="color:var(--orange)">contact@thevoltaura.com</a></div></div>
+        <div class="supp-contact-card"><i data-lucide="message-circle" style="color:var(--green)"></i><div><div style="font-weight:600">WhatsApp</div><div style="color:var(--g400);font-size:12px">Quick chat support</div><a href="https://wa.me/919999900000" target="_blank" style="color:var(--orange)">Chat on WhatsApp</a></div></div>
+      </div>
+      <div class="supp-body" id="suppShortcuts" style="display:none">
+        <table class="tbl" style="font-size:13px"><thead><tr><th>Action</th><th>Shortcut</th></tr></thead><tbody>
+          <tr><td>New Invoice</td><td><kbd>Alt</kbd>+<kbd>I</kbd></td></tr>
+          <tr><td>New Quotation</td><td><kbd>Alt</kbd>+<kbd>Q</kbd></td></tr>
+          <tr><td>Search</td><td><kbd>Ctrl</kbd>+<kbd>K</kbd></td></tr>
+          <tr><td>Dashboard</td><td><kbd>Alt</kbd>+<kbd>D</kbd></td></tr>
+          <tr><td>Customers</td><td><kbd>Alt</kbd>+<kbd>C</kbd></td></tr>
+          <tr><td>Close/Cancel</td><td><kbd>Esc</kbd></td></tr>
+        </tbody></table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page-area">
+
+<!-- ══════════════ DASHBOARD PAGE ══════════════ -->
+<div class="page active" id="dashboard-page">
+  <div class="ph">
+    <div>
+      <h2>Dashboard Overview</h2>
+      <div class="sub">Welcome back, here's what's happening with your solar projects today.</div>
+    </div>
+    <div class="ph-actions">
+      <span style="font-size:12px;color:var(--g400)" id="dashLastUpdated"></span>
+      <button class="btn btn-secondary btn-sm" onclick="initDashboard()"><i data-lucide="refresh-cw" style="width:14px;height:14px"></i> Refresh</button>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-top"><div class="kpi-label">Total Revenue</div><div class="kpi-icon ki-green"><i data-lucide="trending-up" style="width:20px;height:20px;color:var(--green)"></i></div></div>
+      <div class="kpi-val" id="kpiRevenue">₹0</div>
+      <div class="kpi-delta"><span class="pct up">+12%</span><span class="desc">from last month</span></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-top"><div class="kpi-label">Pending Payments</div><div class="kpi-icon ki-orange"><i data-lucide="clock" style="width:20px;height:20px;color:var(--orange)"></i></div></div>
+      <div class="kpi-val" id="kpiPending">₹0</div>
+      <div class="kpi-delta"><span class="pct down">+5%</span><span class="desc">increase in pending</span></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-top"><div class="kpi-label">Active AMCs</div><div class="kpi-icon ki-blue"><i data-lucide="wrench" style="width:20px;height:20px;color:var(--blue)"></i></div></div>
+      <div class="kpi-val" id="kpiAmc">0</div>
+      <div class="kpi-delta"><span class="pct up">+8%</span><span class="desc">new contracts</span></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-top"><div class="kpi-label">Low Stock Items</div><div class="kpi-icon ki-red"><i data-lucide="alert-triangle" style="width:20px;height:20px;color:var(--red)"></i></div></div>
+      <div class="kpi-val" id="kpiLowStock">0</div>
+      <div class="kpi-delta"><span class="kpi-alert" id="kpiLowStockAlert">Requires attention</span></div>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="charts-row">
+    <div class="chart-card">
+      <div class="section-hdr" style="margin-bottom:4px"><div><h3>Monthly Revenue</h3><div class="ch-sub">Yearly performance overview</div></div><span class="badge b-gray badge-no-dot" style="font-size:11px">Last 12 Months</span></div>
+      <div style="position:relative;height:240px;width:100%">
+        <canvas id="revenueChart"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <h3>Invoice Status</h3>
+      <div style="position:relative;display:flex;align-items:center;justify-content:center;margin:10px 0;height:200px">
+        <canvas id="invoiceStatusChart" style="max-height:200px;max-width:200px"></canvas>
+        <div style="position:absolute;text-align:center;pointer-events:none"><div style="font-size:28px;font-weight:800;color:var(--g900)" id="donutTotal">0</div><div style="font-size:11px;color:var(--g400);font-weight:600">INVOICES</div></div>
+      </div>
+      <div class="donut-legend" id="donutLegend">
+        <div class="dl-row"><div><span class="dl-dot" style="background:#10B981"></span>Paid</div><div class="dl-pct" id="dlPaid">0%</div></div>
+        <div class="dl-row"><div><span class="dl-dot" style="background:#F59E0B"></span>Pending</div><div class="dl-pct" id="dlPending">0%</div></div>
+        <div class="dl-row"><div><span class="dl-dot" style="background:#EF4444"></span>Overdue</div><div class="dl-pct" id="dlOverdue">0%</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="card cp" style="margin-bottom:20px">
+    <div class="section-hdr"><h3>Quick Actions</h3><span style="font-size:12px;color:var(--g400)">Frequently used tools to manage your operations</span></div>
+    <div class="qa-grid">
+      <button class="qa-card" onclick="navigatePage('create-quotation')"><div class="qa-icon"><i data-lucide="file-plus"></i></div><div class="qa-title">Create Quotation</div><div class="qa-desc">Draft a new proposal</div></button>
+      <button class="qa-card" onclick="openCustomerModal()"><div class="qa-icon"><i data-lucide="user-plus"></i></div><div class="qa-title">Add Customer</div><div class="qa-desc">Register new client</div></button>
+      <button class="qa-card" onclick="navigatePage('reports')"><div class="qa-icon"><i data-lucide="download"></i></div><div class="qa-title">Generate Report</div><div class="qa-desc">Download analytics</div></button>
+      <button class="qa-card" onclick="navigatePage('products')"><div class="qa-icon"><i data-lucide="box"></i></div><div class="qa-title">Check Inventory</div><div class="qa-desc">Review stock levels</div></button>
+    </div>
+  </div>
+
+  <!-- Recent Invoices -->
+  <div class="card" style="overflow:hidden">
+    <div class="section-hdr" style="padding:18px 20px 0"><h3>Recent Invoices</h3><a href="#" onclick="navigatePage('invoices');return false">View all →</a></div>
+    <div class="tw"><table class="tbl" id="dashRecentInvTable">
+      <thead><tr>
+        <th>Invoice ID</th><th>Customer</th><th>Date</th><th>Amount</th><th>Status</th>
+      </tr></thead>
+      <tbody id="dashRecentInvoices"><tr><td colspan="5" class="empty-state">Loading...</td></tr></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- ══════════════ CUSTOMERS PAGE ══════════════ -->
+<div class="page" id="customers-page">
+  <div class="breadcrumb"><a href="#" onclick="navigatePage('dashboard');return false">Home</a><span class="bc-sep">›</span><span class="bc-cur">Customers</span></div>
+  <div class="ph">
+    <div>
+      <h2>Customer Directory</h2>
+      <div class="sub">Manage your solar service clients, GST details, and billing history.</div>
+    </div>
+    <div class="ph-actions">
+      <button class="btn btn-secondary btn-sm" onclick="exportCSV('customers')"><i data-lucide="download" style="width:14px;height:14px"></i> Export CSV</button>
+      <button class="btn btn-primary" onclick="openCustomerModal()"><i data-lucide="user-plus" style="width:14px;height:14px"></i> Add Customer</button>
+    </div>
+  </div>
+
+  <!-- Filter Card -->
+  <div class="filter-card">
+    <div class="fc-group">
+      <div class="fc-label">Search</div>
+      <div class="sbox"><i data-lucide="search" class="si"></i><input type="text" id="custSearch" placeholder="Search by name, phone, or GST..."></div>
+    </div>
+    <div class="filter-sep"></div>
+    <div class="fc-group">
+      <div class="fc-label">City</div>
+      <select class="filter-sel" id="custCityFilter"><option value="">All Cities</option></select>
+    </div>
+    <div class="filter-sep"></div>
+    <div class="fc-group">
+      <div class="fc-label">GST Status</div>
+      <select class="filter-sel" id="custGstFilter"><option value="">All Statuses</option><option>Registered</option><option>Composition</option><option>Unregistered</option></select>
+    </div>
+  </div>
+
+  <div class="card" style="overflow:hidden">
+    <div class="tw"><table class="tbl" id="customersTable">
+      <thead><tr>
+        <th>Customer Name</th><th>Phone</th><th>GST Number</th><th>City</th><th>Total Revenue</th><th>Status</th><th>Actions</th>
+      </tr></thead>
+      <tbody id="customersBody"><tr><td colspan="7" class="empty-state">Loading...</td></tr></tbody>
+    </table></div>
+    <div class="tf"><div class="tf-info" id="custFooter">0 results</div><div class="pag" id="custPag"></div></div>
+  </div>
+</div>
+
+<!-- ══════════════ PRODUCTS PAGE ══════════════ -->
+<div class="page" id="products-page">
+  <div class="breadcrumb"><a href="#" onclick="navigatePage('dashboard');return false">Home</a><span class="bc-sep">›</span><span class="bc-cur">Products</span></div>
+  <div class="ph">
+    <div><h2>Inventory</h2><div class="sub">Solar panels, inverters, batteries and accessories stock management.</div></div>
+    <div class="ph-actions">
+      <button class="btn btn-primary" onclick="openProductModal()"><i data-lucide="plus" style="width:14px;height:14px"></i> Add Product</button>
+    </div>
+  </div>
+  <!-- Stat Cards -->
+  <div class="kpi-grid" style="margin-bottom:20px">
+    <div class="kpi-card"><div class="kpi-top"><div class="kpi-label">Total Products</div><div class="kpi-icon ki-blue"><i data-lucide="package"></i></div></div><div class="kpi-val" id="statTotalProducts">0</div><div class="kpi-delta"><span class="desc txt-muted">items in catalog</span></div></div>
+    <div class="kpi-card"><div class="kpi-top"><div class="kpi-label">Low Stock</div><div class="kpi-icon ki-red"><i data-lucide="alert-triangle"></i></div></div><div class="kpi-val" id="statLowStock">0</div><div class="kpi-delta"><span class="kpi-alert" id="lowStockAlert">items need restock</span></div></div>
+    <div class="kpi-card"><div class="kpi-top"><div class="kpi-label">Total Value</div><div class="kpi-icon ki-green"><i data-lucide="banknote"></i></div></div><div class="kpi-val" id="statTotalValue">₹0</div><div class="kpi-delta"><span class="desc txt-muted">inventory worth</span></div></div>
+    <div class="kpi-card"><div class="kpi-top"><div class="kpi-label">Top Category</div><div class="kpi-icon ki-orange"><i data-lucide="star"></i></div></div><div class="kpi-val" style="font-size:18px" id="statTopCategory">—</div><div class="kpi-delta" id="statTopCatSub"></div></div>
+  </div>
+  <!-- Filter tabs -->
+  <div class="ftabs" id="productFilterTabs">
+    <button class="ftab active" data-cat="all">All Items</button>
+    <button class="ftab" data-cat="panels"><i data-lucide="sun" class="ftab-icon"></i> Panels</button>
+    <button class="ftab" data-cat="inverter"><i data-lucide="zap" class="ftab-icon"></i> Inverters</button>
+    <button class="ftab" data-cat="batter"><i data-lucide="battery" class="ftab-icon"></i> Batteries</button>
+    <button class="ftab" data-cat="cable"><i data-lucide="plug" class="ftab-icon"></i> Cables</button>
+    <button class="ftab" data-cat="service"><i data-lucide="wrench" class="ftab-icon"></i> Services</button>
+    <div class="ftab-actions lm-auto">
+      <div class="sbox"><i data-lucide="search" class="si"></i><input type="text" id="prodSearch" placeholder="Search products..."></div>
+    </div>
+  </div>
+  <div class="card" style="overflow:hidden">
+    <div class="tw"><table class="tbl" id="productsTable">
+      <thead><tr>
+        <th>Product</th><th>Category</th><th>Brand</th><th>Stock</th><th>Price</th><th>Status</th><th>Actions</th>
+      </tr></thead>
+      <tbody id="productsBody"><tr><td colspan="7" class="empty-state">Loading...</td></tr></tbody>
+    </table></div>
+    <div class="tf"><div class="tf-info" id="prodFooter">0 items</div></div>
+  </div>
+</div>
+
+<!-- ══════════════ QUOTATIONS PAGE ══════════════ -->
+<div class="page" id="quotations-page">
+  <div class="ph">
+    <div><h2>Quotations</h2><div class="sub">Manage proposals and convert them to invoices.</div></div>
+    <div class="ph-actions">
+      <button class="btn btn-primary" onclick="navigatePage('create-quotation')"><i data-lucide="plus" style="width:14px;height:14px"></i> New Quotation</button>
+    </div>
+  </div>
+  <div class="toolbar">
+    <div class="sbox"><i data-lucide="search" class="si"></i><input type="text" id="quotSearch" placeholder="Search quotations..."></div>
+    <select class="filter-sel" id="quotStatusFilter" style="min-width:130px"><option value="">All Statuses</option><option>Draft</option><option>Sent</option><option>Converted</option></select>
+  </div>
+  <div class="card" style="overflow:hidden">
+    <div class="tw"><table class="tbl">
+      <thead><tr><th>Quotation #</th><th>Customer</th><th>Date</th><th>Amount</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody id="quotationsBody"><tr><td colspan="6" class="empty-state">Loading...</td></tr></tbody>
+    </table></div>
+    <div class="tf"><div class="tf-info" id="quotFooter">0 results</div></div>
+  </div>
+</div>
+
+<!-- ══════════════ INVOICES PAGE ══════════════ -->
+<div class="page" id="invoices-page">
+  <div class="ph">
+    <div><h2>Invoices</h2><div class="sub">Track and manage all customer invoices and payment status.</div></div>
+    <div class="ph-actions">
+      <button class="btn btn-primary" onclick="navigatePage('create-invoice')"><i data-lucide="plus" style="width:14px;height:14px"></i> New Invoice</button>
+    </div>
+  </div>
+  <div class="toolbar">
+    <div class="sbox"><i data-lucide="search" class="si"></i><input type="text" id="invSearch" placeholder="Search invoices..."></div>
+    <select class="filter-sel" id="invStatusFilter" style="min-width:130px"><option value="">All Statuses</option><option>Paid</option><option>Pending</option><option>Overdue</option><option>Draft</option></select>
+  </div>
+  <div class="card" style="overflow:hidden">
+    <div class="tw"><table class="tbl">
+      <thead><tr><th>Invoice ID</th><th>Customer</th><th>Date</th><th>Taxable Amt</th><th>GST</th><th>Total</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody id="invoicesBody"><tr><td colspan="8" class="empty-state">Loading...</td></tr></tbody>
+    </table></div>
+    <div class="tf"><div class="tf-info" id="invFooter">0 results</div><div class="pag" id="invPag"></div></div>
+  </div>
+</div>
+
+<!-- ══════════════ PAYMENTS PAGE ══════════════ -->
+<div class="page" id="payments-page">
+  <div class="ph">
+    <div><h2>Payments</h2><div class="sub">Payment receipts and transaction history.</div></div>
+    <div class="ph-actions">
+      <button class="btn btn-primary" onclick="showModal('recordPaymentModal')"><i data-lucide="plus" style="width:14px;height:14px"></i> Record Payment</button>
+    </div>
+  </div>
+  <div class="toolbar">
+    <div class="sbox"><i data-lucide="search" class="si"></i><input type="text" id="paySearch" placeholder="Search payments..."></div>
+  </div>
+  <div class="card" style="overflow:hidden">
+    <div class="tw"><table class="tbl">
+      <thead><tr><th>Payment #</th><th>Invoice</th><th>Amount</th><th>Method</th><th>Date</th><th>Reference</th><th>Actions</th></tr></thead>
+      <tbody id="paymentsBody"><tr><td colspan="7" class="empty-state">Loading...</td></tr></tbody>
+    </table></div>
+    <div class="tf"><div class="tf-info" id="payFooter">0 results</div></div>
+  </div>
+</div>
+
+<!-- ══════════════ AMC PAGE ══════════════ -->
+<div class="page" id="amc-page">
+  <div class="ph">
+    <div><h2>AMC Management</h2><div class="sub">Track annual maintenance contracts, schedule visits, and manage service history.</div></div>
+    <div class="ph-actions">
+      <button class="btn btn-secondary btn-sm"><i data-lucide="download" style="width:14px;height:14px"></i> Export</button>
+      <button class="btn btn-secondary btn-sm"><i data-lucide="filter" style="width:14px;height:14px"></i> Filters</button>
+      <button class="btn btn-primary" onclick="openAmcModal()"><i data-lucide="plus" style="width:14px;height:14px"></i> New Contract</button>
+    </div>
+  </div>
+  <!-- Stat cards -->
+  <div class="amc-stat-grid">
+    <div class="amc-stat"><div class="amc-stat-label">Active Contracts</div><div class="amc-stat-val" id="amcActiveCount">0</div><div class="amc-stat-badge asb-green" id="amcActiveDelta">+5%</div><div class="amc-stat-icon"><i data-lucide="clipboard-list"></i></div></div>
+    <div class="amc-stat"><div class="amc-stat-label">Services Due (7 Days)</div><div class="amc-stat-val" id="amcDueCount">0</div><div class="urgent-badge"><i data-lucide="alert-circle" style="width:12px;height:12px"></i> Urgent</div><div class="amc-stat-icon"><i data-lucide="calendar"></i></div></div>
+    <div class="amc-stat"><div class="amc-stat-label">Expiring Contracts</div><div class="amc-stat-val" id="amcExpiringCount">0</div><div class="amc-stat-badge asb-red" id="amcExpiringDelta">-10%</div><div class="amc-stat-icon"><i data-lucide="alert-triangle"></i></div></div>
+    <div class="amc-stat"><div class="amc-stat-label">Revenue YTD</div><div class="amc-stat-val" id="amcRevenue">₹0</div><div class="amc-stat-badge asb-green">+15%</div><div class="amc-stat-icon"><i data-lucide="banknote"></i></div></div>
+  </div>
+
+  <div class="amc-layout">
+    <!-- Table side -->
+    <div>
+      <div class="toolbar">
+        <div class="sbox"><i data-lucide="search" class="si"></i><input type="text" id="amcSearch" placeholder="Search by customer, ID, or technician..."></div>
+        <select class="filter-sel" id="amcStatusFilter"><option value="">All Status</option><option>Active</option><option>Expiring Soon</option><option>Expired</option></select>
+        <button class="filt-btn">Technician ▾</button>
+        <button class="filt-btn">Sort</button>
+      </div>
+      <div class="card" style="overflow:hidden">
+        <div class="tw"><table class="tbl">
+          <thead><tr><th>Customer &amp; Contract ID</th><th>Period</th><th>Next Service</th><th>System Size</th><th>Status</th></tr></thead>
+          <tbody id="amcBody"><tr><td colspan="5" class="empty-state">Loading...</td></tr></tbody>
+        </table></div>
+        <div class="tf"><div class="tf-info" id="amcFooter">0 results</div><div class="pag" id="amcPag"></div></div>
+      </div>
+    </div>
+    <!-- Detail panel -->
+    <div class="amc-detail-panel" id="amcDetailPanel">
+      <div class="adp-img" style="background:linear-gradient(135deg,#0f2027,#203a43,#2c5364)">
+        <div style="width:100%;height:100%;background:linear-gradient(135deg,#1a3a2a,#2d6a4f);display:flex;align-items:center;justify-content:center;font-size:60px;opacity:.3"><i data-lucide="sun" style="width:80px;height:80px;color:#fff"></i></div>
+        <div class="adp-img-text">
+          <div class="adp-name" id="adpName">Select a contract</div>
+          <div class="adp-id" id="adpId">—</div>
+        </div>
+        <button class="adp-edit" onclick="openAmcModal(_selectedAmc?.id, _selectedAmc)"><i data-lucide="edit-3" style="width:14px;height:14px"></i></button>
+      </div>
+      <div class="adp-body">
+        <div class="adp-meta-row">
+          <div class="adp-meta-item"><div class="adp-meta-lbl">Status</div><div id="adpStatus">—</div></div>
+          <div class="adp-meta-item"><div class="adp-meta-lbl">Next Visit</div><div class="adp-meta-val" id="adpNext">—</div></div>
+        </div>
+        <button class="btn-convert" style="font-size:14px;padding:12px"><i data-lucide="wrench" style="width:14px;height:14px;margin-right:6px"></i> Add Service Record</button>
+      </div>
+      <div class="service-hist">
+        <div class="sh-header"><span>Service History</span><a href="#">View All</a></div>
+        <div id="amcServiceHistory">
+          <div class="sh-item"><div class="sh-icon">✅</div><div class="sh-content"><div class="sh-date">—</div><div class="sh-title">No records yet</div><div class="sh-desc">Click a contract row to view its service history.</div></div></div>
+        </div>
+      </div>
+      <div class="tech-note-wrap">
+        <div class="adp-meta-lbl" style="padding-bottom:6px">Quick Technician Note</div>
+        <div class="tech-note-box">
+          <textarea placeholder="Enter observations..." id="amcTechNote"></textarea>
+          <button class="send-btn" title="Send">➤</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ REPORTS PAGE ══════════════ -->
+<div class="page" id="reports-page">
+  <div class="ph">
+    <div>
+      <h2>Financial Performance &amp; GST Compliance</h2>
+      <div class="sub">Track revenue, tax liabilities, and operational costs in real-time.</div>
+    </div>
+  </div>
+  <div class="rpt-controls">
+    <button class="rpt-ctrl-btn">📅 This Month <span class="arrow">▾</span></button>
+    <button class="rpt-ctrl-btn">👥 All Customers <span class="arrow">▾</span></button>
+    <button class="rpt-ctrl-btn export"><i data-lucide="download" style="width:14px;height:14px"></i> Export Report</button>
+  </div>
+  <!-- KPIs -->
+  <div class="rpt-kpi">
+    <div class="rpt-kpi-card">
+      <div class="rkt-icon-row"><div class="rkt-ico ki-blue" style="background:var(--blue-lt)"><i data-lucide="briefcase"></i></div><span class="rkt-delta up">↑ 12%</span></div>
+      <div class="rkt-label">Total Revenue</div>
+      <div class="rkt-val" id="rptRevenue">₹0</div>
+    </div>
+    <div class="rpt-kpi-card">
+      <div class="rkt-icon-row"><div class="rkt-ico ki-purple" style="background:var(--purple-lt)"><i data-lucide="landmark"></i></div><span class="rkt-delta up">↑ 5%</span></div>
+      <div class="rkt-label">GST Collected</div>
+      <div class="rkt-val" id="rptGst">₹0</div>
+    </div>
+    <div class="rpt-kpi-card">
+      <div class="rkt-icon-row"><div class="rkt-ico ki-green" style="background:var(--green-lt)"><i data-lucide="heart"></i></div><span class="rkt-delta up">↑ 8%</span></div>
+      <div class="rkt-label">Net Profit</div>
+      <div class="rkt-val" id="rptNetProfit">₹0</div>
+    </div>
+    <div class="rpt-kpi-card">
+      <div class="rkt-icon-row"><div class="rkt-ico ki-orange" style="background:var(--orange-lt)"><i data-lucide="receipt"></i></div><span class="rkt-delta down">↓ 2%</span></div>
+      <div class="rkt-label">Pending Payments</div>
+      <div class="rkt-val" id="rptPending">₹0</div>
+    </div>
+  </div>
+  <!-- Transaction table -->
+  <div class="trans-card">
+    <div class="trans-hdr">
+      <h3>Transaction Details</h3>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="sbox" style="max-width:200px"><span class="si">🔍</span><input type="text" placeholder="Filter transactions..."></div>
+        <button class="tb-icon-btn" style="font-size:13px">⊞</button>
+      </div>
+    </div>
+    <div class="tw"><table class="tbl">
+      <thead><tr>
+        <th>Invoice ID</th><th>Date</th><th>Customer</th><th>Capacity</th><th>Taxable Amt</th><th>GST (18%)</th><th>Total</th><th>Status</th><th>Action</th>
+      </tr></thead>
+      <tbody id="transBody"><tr><td colspan="9" class="empty-state">Loading...</td></tr></tbody>
+    </table></div>
+    <div class="tf"><div class="tf-info" id="tranFooter">0 results</div><div style="display:flex;gap:8px"><button class="btn btn-secondary btn-sm">Previous</button><button class="btn btn-secondary btn-sm">Next</button></div></div>
+  </div>
+</div>
+
+<!-- ══════════════ SETTINGS PAGE ══════════════ -->
+<div class="page" id="settings-page">
+  <div class="ph"><div><h2>Settings</h2><div class="sub">Configure your organization profile and preferences.</div></div></div>
+  <div class="card cp" style="max-width:600px">
+    <div class="card-title"><i data-lucide="building" style="width:18px;margin-right:8px"></i> Organization Details</div>
+    <div class="fr2">
+      <div class="fg"><label class="fl">Organization Name</label><input class="fi" id="orgName" value="TheVoltaura Private ltd"></div>
+      <div class="fg"><label class="fl">GST Number</label><input class="fi" id="orgGst" value="33AAAAA0000A1Z5"></div>
+    </div>
+    <div class="fr2">
+      <div class="fg"><label class="fl">Email</label><input class="fi" id="orgEmail" value="contact@thevoltaura.com" type="email"></div>
+      <div class="fg"><label class="fl">Phone</label><input class="fi" id="orgPhone" value="+91 90255 96481"></div>
+    </div>
+    <div class="fg"><label class="fl">Address</label><textarea class="fi" id="orgAddress" rows="2">123 Solar Street, Chennai, Tamil Nadu - 600001</textarea></div>
+    <button class="btn btn-primary" style="margin-top:8px">Save Settings</button>
+  </div>
+</div>
+
+<!-- ══════════════ CREATE QUOTATION ══════════════ -->
+<div class="page" id="create-quotation-page">
+  <div class="breadcrumb"><a href="#" onclick="navigatePage('quotations');return false">Quotations</a><span class="bc-sep">›</span><span class="bc-cur">Create New</span></div>
+  <div class="ph">
+    <div style="display:flex;align-items:center;gap:12px"><h2>Create New Quotation</h2><span class="badge b-gray badge-no-dot">DRAFT</span></div>
+    <div class="ph-actions" id="qtRefNum" style="font-size:12px;color:var(--g400)"></div>
+  </div>
+  <div class="qt-layout">
+    <div>
+      <!-- Customer card -->
+      <div class="qc">
+        <div class="qch"><div class="ct"><i data-lucide="user" style="width:16px;margin-right:6px"></i> Customer Details</div></div>
+        <div class="qcb">
+          <div class="fr2">
+            <div class="fg"><label class="fl">Customer *</label>
+              <select class="fi" id="quotationCustomerSelect"><option value="">Select customer...</option></select></div>
+            <div class="fg"><label class="fl">Quotation Date *</label><input class="fi" type="date" id="quotationDate"></div>
+          </div>
+          <div class="fr2">
+            <div class="fg"><label class="fl">Billing Address</label><input class="fi" id="qtBillingAddr" placeholder="123 Main St, City"></div>
+            <div class="fg"><label class="fl">Site / Installation Address</label><input class="fi" id="qtSiteAddr" placeholder="Installation site address"></div>
+          </div>
+        </div>
+      </div>
+      <!-- Line items card -->
+      <div class="qc">
+        <div class="qch"><div class="ct"><i data-lucide="zap" style="width:16px;margin-right:6px"></i> System Configuration &amp; Products</div></div>
+        <div style="overflow-x:auto">
+          <table class="li-tbl" style="min-width:650px">
+            <thead><tr><th style="min-width:200px">Product / Description</th><th style="width:70px;text-align:center">Qty</th><th style="width:130px">Unit Price</th><th style="width:90px">GST %</th><th style="width:100px;text-align:right">Amount</th><th style="width:40px"></th></tr></thead>
+            <tbody id="quotationItemsBody"></tbody>
+          </table>
+          <button class="add-li-btn" id="addQuotationRow">+ Add Line Item</button>
+        </div>
+      </div>
+      <!-- Notes card -->
+      <div class="qc">
+        <div class="qch"><div class="ct"><i data-lucide="file-text" style="width:16px;margin-right:6px"></i> Notes &amp; Terms</div></div>
+        <div class="qcb">
+          <div class="fg"><label class="fl">Customer Notes</label><textarea class="fi" id="qtNotes" rows="3" placeholder="Any special instructions for the customer..."></textarea></div>
+          <div class="fg" style="display:flex;gap:16px;flex-wrap:wrap">
+            <label class="fcheck"><input type="checkbox" id="qtStc"><span class="fcheck-label">Include STC Rebate calculation</span></label>
+            <label class="fcheck"><input type="checkbox" id="qtHidePrice"><span class="fcheck-label">Hide item prices in PDF</span></label>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Totals Panel -->
+    <div class="totals-panel">
+      <div class="card-title" style="font-size:14px"><i data-lucide="bar-chart" style="width:16px;margin-right:6px"></i> Summary</div>
+      <div class="tot-row"><span class="txt-muted">Subtotal</span><strong id="qtSubtotal">₹0.00</strong></div>
+      <div class="tot-row"><span class="txt-muted">Discount</span><div style="display:flex;align-items:center;gap:6px"><span>₹</span><input type="number" id="qtDiscount" class="fi" style="width:80px;padding:4px 8px;text-align:right" value="0" min="0"></div></div>
+      <div class="tot-row"><span class="txt-muted">GST / Tax</span><strong id="qtGst">₹0.00</strong></div>
+      <div class="tot-row divider"><span class="fw7">Grand Total</span></div>
+      <div class="tot-grand-val" id="qtTotal">₹0.00</div>
+      <div class="tot-gst-note" id="qtGstNote">Incl. GST</div>
+      <div style="margin-top:20px;display:flex;flex-direction:column;gap:10px">
+        <button class="btn-convert" id="createQuotationBtn"><i data-lucide="plus" style="width:14px;height:14px;margin-right:6px"></i> Create Quotation</button>
+        <button class="btn btn-secondary btn-full" id="saveQuotationBtn"><i data-lucide="rocket" style="width:14px;height:14px;margin-right:6px"></i> Convert to Invoice</button>
+        <button class="btn btn-secondary btn-full" id="saveQuotationDraftBtn"><i data-lucide="save" style="width:14px;height:14px;margin-right:6px"></i> Save as Draft</button>
+        <button class="btn btn-ghost btn-full" id="saveQuotationDraftBtn2" onclick="navigatePage('quotations')">✕ Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ CREATE INVOICE ══════════════ -->
+<div class="page" id="create-invoice-page">
+  <div class="breadcrumb"><a href="#" onclick="navigatePage('invoices');return false">Invoices</a><span class="bc-sep">›</span><span class="bc-cur">New</span></div>
+  <div class="ph">
+    <div><h2>New Invoice</h2></div>
+    <div class="ph-actions"><button class="btn btn-secondary btn-sm" onclick="navigatePage('invoices')">Cancel</button><button class="btn btn-primary" id="saveInvoiceBtn">Save Invoice</button></div>
+  </div>
+  <div class="qt-layout">
+    <div>
+      <div class="qc">
+        <div class="qch"><div class="ct"><i data-lucide="user" style="width:16px;margin-right:6px"></i> Invoice Details</div></div>
+        <div class="qcb">
+          <div class="fr2">
+            <div class="fg"><label class="fl">Customer *</label><select class="fi" id="invoiceCustomerSelect"><option value="">Select customer...</option></select></div>
+            <div class="fg"><label class="fl">Invoice Date</label><input class="fi" type="date" id="invoiceDate"></div>
+          </div>
+          <div class="fr2">
+            <div class="fg"><label class="fl">Supply Type</label>
+              <select class="fi" id="invoiceSupplyType"><option value="intra">Intra-State (CGST+SGST)</option><option value="inter">Inter-State (IGST)</option></select></div>
+            <div class="fg"><label class="fl">Due Date</label><input class="fi" type="date" id="invoiceDueDate"></div>
+          </div>
+        </div>
+      </div>
+      <div class="qc">
+        <div class="qch"><div class="ct"><i data-lucide="package" style="width:16px;margin-right:6px"></i> Line Items</div></div>
+        <div style="overflow-x:auto">
+          <table class="li-tbl" style="min-width:650px">
+            <thead><tr><th style="min-width:200px">Product</th><th style="width:70px;text-align:center">Qty</th><th style="width:130px">Unit Price</th><th style="width:90px">GST %</th><th style="width:100px;text-align:right">Amount</th><th style="width:40px"></th></tr></thead>
+            <tbody id="invoiceItemsBody"></tbody>
+          </table>
+          <button class="add-li-btn" id="addInvoiceRow">+ Add Line Item</button>
+        </div>
+      </div>
+    </div>
+    <div class="totals-panel">
+      <div class="card-title"><i data-lucide="bar-chart" style="width:16px;margin-right:6px"></i> Invoice Summary</div>
+      <div class="tot-row"><span class="txt-muted">Subtotal</span><strong id="invSubtotal">₹0.00</strong></div>
+      <div class="tot-row" id="invCgstRow"><span class="txt-muted">CGST</span><strong id="invCgst">₹0.00</strong></div>
+      <div class="tot-row" id="invSgstRow"><span class="txt-muted">SGST</span><strong id="invSgst">₹0.00</strong></div>
+      <div class="tot-row" id="invIgstRow" style="display:none"><span class="txt-muted">IGST</span><strong id="invIgst">₹0.00</strong></div>
+      <div class="tot-row divider"><span class="fw7">Grand Total</span></div>
+      <div class="tot-grand-val" id="invTotal">₹0.00</div>
+      <div style="margin-top:20px">
+        <button class="btn-convert" id="saveInvoiceBtn2"><i data-lucide="save" style="width:14px;height:14px;margin-right:6px"></i> Save Invoice</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ INVOICE VIEW ══════════════ -->
+<div class="page" id="view-invoice-page">
+  <div class="inv-pg-hdr">
+    <div class="breadcrumb"><a href="#" onclick="navigatePage('invoices');return false">← Back to Invoices</a></div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-secondary btn-sm" id="viewInvPayBtn"><i data-lucide="credit-card" style="width:14px;height:14px"></i> Record Payment</button>
+      <button class="btn btn-secondary btn-sm"><i data-lucide="share-2" style="width:14px;height:14px"></i> Share</button>
+      <button class="btn btn-primary btn-sm" onclick="window.print()"><i data-lucide="printer" style="width:14px;height:14px"></i> Print</button>
+    </div>
+  </div>
+  <div class="inv-title-row">
+    <h2 id="viewInvTitle">Invoice</h2>
+    <span class="tag t-pending" id="viewInvStatus">Pending</span>
+  </div>
+  <div class="inv-doc">
+    <div class="inv-doc-bar"></div>
+    <div class="inv-doc-body">
+      <div class="inv-doc-hdr">
+        <div>
+          <div class="inv-co-logo"><div class="inv-co-icon"><i data-lucide="sun" style="width:24px;height:24px;color:#fff"></i></div><div class="inv-co-name">TheVoltaura Private ltd</div></div>
+          <div class="inv-co-info">GST: 33AAAAA0000A1Z5<br>123 Solar Street, Chennai<br>Tamil Nadu - 600001<br>contact@thevoltaura.com</div>
+        </div>
+        <div class="inv-meta">
+          <h1>INVOICE</h1>
+          <div class="inv-meta-num" id="viewInvDocNum">#—</div>
+          <div class="inv-dates">
+            <div class="inv-date-row"><span class="inv-date-lbl">Issue Date:</span><span class="inv-date-val" id="viewInvIssuedDate">—</span></div>
+            <div class="inv-date-row"><span class="inv-date-lbl">Due Date:</span><span class="inv-date-val" id="viewInvDueDate">—</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="inv-parties">
+        <div><div class="inv-party-lbl">Bill To</div><div class="inv-party-name" id="viewInvBillName">—</div><div class="inv-party-info" id="viewInvBillAddr">—</div></div>
+        <div><div class="inv-party-lbl">Ship To</div><div class="inv-party-name" id="viewInvShipName">—</div><div class="inv-party-info" id="viewInvShipAddr">—</div></div>
+      </div>
+      <div class="inv-items">
+        <div class="inv-items-hd">
+          <span>Description</span><span style="text-align:center">Qty</span><span>Unit Price</span><span>Tax</span><span>Total</span>
+        </div>
+        <div id="viewInvItems"></div>
+      </div>
+      <div class="inv-tots">
+        <div class="inv-tot-row"><span class="itl">Subtotal</span><span id="viewInvSubtotal">₹0.00</span></div>
+        <div class="inv-tot-row"><span class="itl">Total Tax</span><span id="viewInvTax">₹0.00</span></div>
+        <div class="inv-tot-row inv-due-row"><span>Amount Due</span><span class="amount" id="viewInvDue">₹0.00</span></div>
+      </div>
+      <div class="inv-notes"><strong>Payment Terms</strong>Payment due within 30 days. Please include invoice number in your payment reference.</div>
+      <div class="inv-ph">
+        <div class="inv-ph-hdr"><i data-lucide="credit-card" style="width:16px;margin-right:6px"></i> Payment History</div>
+        <div id="viewPayHistory"><div class="inv-ph-empty">No payments recorded yet</div></div>
+      </div>
+      <div class="inv-doc-ftr">
+        <span>TheVoltaura Private ltd | GST: 33AAAAA0000A1Z5</span>
+        <span>Thank you for your business!</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ QUOTATION VIEW ══════════════ -->
+<div class="page" id="view-quotation-page">
+  <div class="inv-pg-hdr">
+    <div class="breadcrumb"><a href="#" onclick="navigatePage('quotations');return false">← Back to Quotations</a></div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-secondary btn-sm" id="viewQtConvertBtn"><i data-lucide="arrow-right-circle" style="width:14px;height:14px"></i> Convert to Invoice</button>
+      <button class="btn btn-primary btn-sm" onclick="window.print()"><i data-lucide="printer" style="width:14px;height:14px"></i> Print / PDF</button>
+    </div>
+  </div>
+  <div class="inv-title-row">
+    <h2 id="viewQtTitle">Quotation</h2>
+    <span class="tag t-draft" id="viewQtStatus">Draft</span>
+  </div>
+  <div class="inv-doc">
+    <div class="inv-doc-bar" style="background:linear-gradient(135deg,#6366f1,#8b5cf6)"></div>
+    <div class="inv-doc-body">
+      <div class="inv-doc-hdr">
+        <div>
+          <div class="inv-co-logo"><div class="inv-co-icon"><i data-lucide="sun" style="width:24px;height:24px;color:#fff"></i></div><div class="inv-co-name" id="viewQtCoName">TheVoltaura Private ltd</div></div>
+          <div class="inv-co-info" id="viewQtCoGst">GST: 33AAAAA0000A1Z5<br>123 Solar Street, Chennai<br>Tamil Nadu - 600001</div>
+        </div>
+        <div class="inv-meta">
+          <h1 style="color:#6366f1">QUOTATION</h1>
+          <div class="inv-meta-num" id="viewQtDocNum">#—</div>
+          <div class="inv-dates">
+            <div class="inv-date-row"><span class="inv-date-lbl">Date:</span><span class="inv-date-val" id="viewQtDate">—</span></div>
+            <div class="inv-date-row"><span class="inv-date-lbl">Valid Until:</span><span class="inv-date-val" id="viewQtValidUntil">—</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="inv-parties">
+        <div><div class="inv-party-lbl">Prepared For</div><div class="inv-party-name" id="viewQtBillName">—</div><div class="inv-party-info" id="viewQtBillAddr">—</div></div>
+        <div><div class="inv-party-lbl">Site Address</div><div class="inv-party-name">Installation Site</div><div class="inv-party-info" id="viewQtSiteAddr">—</div></div>
+      </div>
+      <div class="inv-items">
+        <div class="inv-items-hd">
+          <span>Description</span><span style="text-align:center">Qty</span><span>Unit Price</span><span>GST %</span><span>Total</span>
+        </div>
+        <div id="viewQtItems"></div>
+      </div>
+      <div class="inv-tots">
+        <div class="inv-tot-row"><span class="itl">Subtotal</span><span id="viewQtSubtotal">₹0.00</span></div>
+        <div class="inv-tot-row"><span class="itl">Discount</span><span id="viewQtDiscount">₹0.00</span></div>
+        <div class="inv-tot-row"><span class="itl">GST / Tax</span><span id="viewQtGst">₹0.00</span></div>
+        <div class="inv-tot-row inv-due-row"><span>Grand Total</span><span class="amount" id="viewQtTotal">₹0.00</span></div>
+      </div>
+      <div class="inv-notes" style="font-style:italic" id="viewQtNotes"></div>
+      <div class="inv-notes"><strong>Terms &amp; Conditions:</strong> This quotation is valid for 30 days from the date of issue. Prices are subject to change after the validity period. GST as applicable.</div>
+      <div class="inv-doc-ftr">
+        <span>TheVoltaura Private ltd | GST: 33AAAAA0000A1Z5</span>
+        <span>Thank you for considering us!</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- end page-area -->
+</div><!-- end main -->
+</div><!-- end app -->
+
+<!-- ══════════════ MODAL OVERLAY ══════════════ -->
+<div class="mo" id="modalOverlay"></div>
+
+<!-- ══════════════ CUSTOMER MODAL ══════════════ -->
+<div class="modal" id="customerModal">
+  <div class="mc">
+    <div class="mh"><h3 id="custModalTitle">Add New Customer</h3><button class="mc-close" onclick="closeModal('customerModal')">✕</button></div>
+    <div class="mb">
+      <div class="fr2">
+        <div class="fg"><label class="fl">Full Name *</label><input class="fi" id="custName" placeholder="e.g., Solar Tech Pvt. Ltd."></div>
+        <div class="fg"><label class="fl">Phone *</label><input class="fi" id="custPhone" placeholder="+91 98765 43210"></div>
+      </div>
+      <div class="fr2">
+        <div class="fg"><label class="fl">Email</label><input class="fi" id="custEmail" type="email" placeholder="email@company.com"></div>
+        <div class="fg"><label class="fl">City</label><input class="fi" id="custCity" placeholder="Mumbai"></div>
+      </div>
+      <div class="fr2">
+        <div class="fg"><label class="fl">GSTIN</label><input class="fi" id="custGstin" placeholder="27ABCDE1234F1Z5"></div>
+        <div class="fg"><label class="fl">GST Status</label>
+          <select class="fi" id="custGstStatus"><option>Registered</option><option>Composition</option><option>Unregistered</option></select></div>
+      </div>
+      <div class="fg"><label class="fl">Billing Address</label><input class="fi" id="custAddress" placeholder="Street, City, Pin"></div>
+      <div class="fg"><label class="fl">Active Status</label>
+        <select class="fi" id="custStatus"><option value="Active">Active</option><option value="Inactive">Inactive</option></select></div>
+    </div>
+    <div class="mf"><button class="btn btn-secondary" onclick="closeModal('customerModal')">Cancel</button><button class="btn btn-primary" id="saveCustomerBtn">Add Customer</button></div>
+  </div>
+</div>
+
+<!-- ══════════════ PRODUCT MODAL ══════════════ -->
+<div class="modal" id="productModal">
+  <div class="mc">
+    <div class="mh"><h3 id="prodModalTitle">Add New Product</h3><button class="mc-close" onclick="closeModal('productModal')">✕</button></div>
+    <div class="mb">
+      <div class="fg"><label class="fl">Product Name *</label><input class="fi" id="prodName" placeholder="e.g., 400W Monocrystalline Panel"></div>
+      <div class="fr2">
+        <div class="fg"><label class="fl">SKU</label><input class="fi" id="prodSku" placeholder="SP-400W-MONO"></div>
+        <div class="fg"><label class="fl">Brand</label><input class="fi" id="prodBrand" placeholder="Waaree"></div>
+      </div>
+      <div class="fr2">
+        <div class="fg"><label class="fl">Category</label>
+          <select class="fi" id="prodCategory"><option>Panels</option><option>Inverters</option><option>Batteries</option><option>Cables</option><option>Mounting</option><option>Service</option><option>Other</option></select></div>
+        <div class="fg"><label class="fl">GST Rate %</label>
+          <select class="fi" id="prodGst"><option value="5">5%</option><option value="12">12%</option><option value="18" selected>18%</option><option value="28">28%</option></select></div>
+      </div>
+      <div class="fr2">
+        <div class="fg"><label class="fl">Unit Price (₹) *</label><input class="fi" id="prodPrice" type="number" min="0" placeholder="0.00"></div>
+        <div class="fg"><label class="fl">Stock Quantity</label><input class="fi" id="prodStock" type="number" min="0" placeholder="0"></div>
+      </div>
+    </div>
+    <div class="mf"><button class="btn btn-secondary" onclick="closeModal('productModal')">Cancel</button><button class="btn btn-primary" id="saveProductBtn">Add Product</button></div>
+  </div>
+</div>
+
+<!-- ══════════════ RECORD PAYMENT MODAL ══════════════ -->
+<div class="modal" id="recordPaymentModal">
+  <div class="mc">
+    <div class="mh"><h3>Record Payment</h3><button class="mc-close" onclick="closeModal('recordPaymentModal')">✕</button></div>
+    <div class="mb">
+      <div class="fg"><label class="fl">Invoice ID</label><input class="fi" id="payInvoiceId" placeholder="INV-2024-001"></div>
+      <div class="fr2">
+        <div class="fg"><label class="fl">Amount (₹) *</label><input class="fi" id="payAmount" type="number" min="0" placeholder="0.00"></div>
+        <div class="fg"><label class="fl">Payment Date</label><input class="fi" id="payDate" type="date"></div>
+      </div>
+      <div class="fr2">
+        <div class="fg"><label class="fl">Payment Method</label>
+          <select class="fi" id="payMethod"><option>Bank Transfer</option><option>UPI</option><option>Cheque</option><option>Cash</option><option>Card</option></select></div>
+        <div class="fg"><label class="fl">Reference #</label><input class="fi" id="payReference" placeholder="UTR / Cheque No."></div>
+      </div>
+      <div class="fg"><label class="fl">Notes</label><textarea class="fi" id="payNotes" rows="2" placeholder="Optional remarks..."></textarea></div>
+    </div>
+    <div class="mf"><button class="btn btn-secondary" onclick="closeModal('recordPaymentModal')">Cancel</button><button class="btn btn-primary" id="savePaymentBtn">Record Payment</button></div>
+  </div>
+</div>
+
+<!-- ══════════════ AMC MODAL ══════════════ -->
+<div class="modal" id="amcModal">
+  <div class="mc">
+    <div class="mh"><h3 id="amcModalTitle">New AMC Contract</h3><button class="mc-close" onclick="closeModal('amcModal')">✕</button></div>
+    <div class="mb">
+      <div class="fr2">
+        <div class="fg"><label class="fl">Customer Name *</label><input class="fi" id="amcCustomer" placeholder="Customer name"></div>
+        <div class="fg"><label class="fl">System Size (kW)</label><input class="fi" id="amcSystemSize" placeholder="e.g., 5 kW"></div>
+      </div>
+      <div class="fr2">
+        <div class="fg"><label class="fl">Start Date</label><input class="fi" id="amcStartDate" type="date"></div>
+        <div class="fg"><label class="fl">End Date</label><input class="fi" id="amcEndDate" type="date"></div>
+      </div>
+      <div class="fr2">
+        <div class="fg"><label class="fl">Next Service Date</label><input class="fi" id="amcNextService" type="date"></div>
+        <div class="fg"><label class="fl">Status</label>
+          <select class="fi" id="amcStatus"><option>Active</option><option>Expiring Soon</option><option>Expired</option></select></div>
+      </div>
+    </div>
+    <div class="mf"><button class="btn btn-secondary" onclick="closeModal('amcModal')">Cancel</button><button class="btn btn-primary" id="saveAmcBtn">Save Contract</button></div>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

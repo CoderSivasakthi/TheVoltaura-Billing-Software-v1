@@ -1,0 +1,14 @@
+# Build artifacts
+target/
+*.jar
+*.war
+
+# Logs
+*.log
+server_log.txt
+
+# Dev files
+.DS_Store
+.idea/
+.vscode/
+.env*

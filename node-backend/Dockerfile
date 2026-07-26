@@ -1,0 +1,36 @@
+# ─────────────────────────────────────────────
+# Node.js Express BFF (Backend-for-Frontend)
+# ─────────────────────────────────────────────
+FROM node:18-alpine
+
+# Install security updates
+RUN apk add --no-cache dumb-init
+
+WORKDIR /app
+
+# Copy dependency manifests
+COPY package.json package-lock.json ./
+
+# Production-only install
+RUN npm ci --production
+
+# Copy application source files
+COPY server.js ./
+COPY backend/ ./backend/
+COPY data/ ./data/
+
+# Use the built-in non-root node user
+RUN chown -R node:node /app
+USER node
+
+ENV NODE_ENV=production
+ENV PORT=5001
+
+EXPOSE 5001
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD wget -qO- http://localhost:5001/api/health || exit 1
+
+# dumb-init handles signals properly for PID 1
+ENTRYPOINT ["dumb-init", "--"]
+CMD ["node", "server.js"]

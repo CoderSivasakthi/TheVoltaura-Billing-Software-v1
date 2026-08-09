@@ -19,7 +19,6 @@ spring-microservice/
 nginx/
 
 # Docker/CI files
-node-backend/
 Dockerfile
 .dockerignore
 docker-compose*.yml

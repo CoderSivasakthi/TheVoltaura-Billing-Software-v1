@@ -479,11 +479,11 @@ async function getSuperAdminDashboard() {
 async function getPendingApprovals() {
   const [quotations, invoices] = await Promise.all([
     supabase.from('quotations')
-      .select('id, franchise_id, customer_name, project_size, grand_total, submitted_at, approval_status')
+      .select('id, franchise_id, customer_name, customerName, system_size_kw, systemSizeKw, grand_total, grandTotal, submitted_at, approval_status')
       .eq('approval_status', 'Submitted')
       .order('submitted_at', { ascending: true }),
     supabase.from('invoices')
-      .select('id, franchise_id, customer_name, grand_total, submitted_at, approval_status')
+      .select('id, franchise_id, customer_name, customerName, grand_total, grandTotal, submitted_at, approval_status')
       .eq('approval_status', 'Submitted')
       .order('submitted_at', { ascending: true }),
   ]);
@@ -496,6 +496,9 @@ async function getPendingApprovals() {
   const annotated = (data, type) => (data || []).map(item => ({
     ...item,
     type,
+    customer_name: item.customer_name || item.customerName,
+    grand_total: item.grand_total || item.grandTotal,
+    project_size: item.system_size_kw || item.systemSizeKw,
     franchise_name: frMap[item.franchise_id]?.name || item.franchise_id,
     franchise_code: frMap[item.franchise_id]?.franchise_code || '',
   }));

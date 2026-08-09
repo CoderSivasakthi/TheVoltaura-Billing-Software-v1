@@ -665,6 +665,7 @@ export default function ViewQuotation() {
                                     {customerAddress && <div style={{ color: '#333', lineHeight: '1.5' }}>{customerAddress}</div>}
                                     {cleanStr(doc.customer?.phone) && <div style={{ marginTop: '2px' }}>Phone: {cleanStr(doc.customer.phone)}</div>}
                                     {cleanStr(doc.customer?.email) && <div>Email: {cleanStr(doc.customer.email)}</div>}
+                                    {cleanStr(doc.customer?.gstin) && <div>GSTIN: {cleanStr(doc.customer.gstin)}</div>}
                                 </td>
                                 <td style={{ verticalAlign: 'top', width: '45%', textAlign: 'right' }}>
                                     <div style={{ marginBottom: '3px' }}><strong>Date:</strong> {cleanStr(dateStr)}</div>

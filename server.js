@@ -734,7 +734,7 @@ app.post('/api/auth/login', async (req, res) => {
   // Update last_login_at
   try { await updateEntity('users', user.id, { last_login_at: new Date().toISOString() }); } catch(e) {}
   
-  const role = user.role === 'admin' ? 'super_admin' : (user.role || 'franchise_admin');
+  const role = (user.role === 'admin' || user.role === 'head_office') ? 'super_admin' : (user.role || 'franchise_admin');
   const tokenPayload = { 
     username:    user.username, 
     role,
@@ -765,8 +765,7 @@ function requireAuth(req, res, next) {
     const payload = jwt.verify(raw, JWT_SECRET);
     req.user = payload;
     if (!req.user.tenant_id) req.user.tenant_id = 'admin';
-    // Normalise legacy 'admin' role to 'super_admin'
-    if (req.user.role === 'admin') req.user.role = 'super_admin';
+    if (req.user.role === 'admin' || req.user.role === 'head_office') req.user.role = 'super_admin';
     // Attach req.tenant for convenience
     req.tenant = {
       id:                req.user.tenant_id,
@@ -1425,9 +1424,7 @@ app.put('/api/invoices/:id', requireAuth, async (req, res) => {
     delete dbPayload.created_at;
     delete dbPayload.updated_at;
     
-    // Also remove any nested relations if they were passed
-    delete dbPayload.payments;
-    delete dbPayload.items;
+    // Remove relations that are joined via Supabase select (not actual columns)
     delete dbPayload.customer;
     delete dbPayload.quotation;
 
@@ -1834,8 +1831,6 @@ app.put('/api/settings', requireAuth, async (req, res) => {
     res.json(upd);
   } catch (e) { console.error("500 ERROR CAUGHT:", e); require("fs").appendFileSync("server_errors.log", String(e.stack) + "\n"); res.status(500).json({ error: e.message }); }
 });
-
-
 
 // ══════════════════════════════════════════════════════════════════════════════
 // ── FRANCHISE MANAGEMENT APIs (Super Admin only) ───────────────────────────
@@ -2280,3 +2275,5 @@ try {
 } catch (e) {
   console.warn('ws not available:', e.message);
 }
+ 
+ 

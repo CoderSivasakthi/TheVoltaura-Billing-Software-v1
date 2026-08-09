@@ -1,9 +1,8 @@
-require('dotenv').config();
 const { createClient } = require('@supabase/supabase-js');
+require('dotenv').config();
 const supa = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
-
 async function run() {
-  const { data, error } = await supa.from('notifications').select('*').limit(1);
-  console.log(error || data);
+    const res = await supa.from('orders').select('*').limit(1);
+    console.log("Orders columns:", res.data ? Object.keys(res.data[0]) : res.error);
 }
 run();

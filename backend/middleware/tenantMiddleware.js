@@ -22,7 +22,7 @@ async function resolveTenant(req, res, next) {
     franchise_id:      user.franchise_id || null,
     role:              user.role         || 'franchise_admin',
     username:          user.username     || 'unknown',
-    is_super_admin:    (user.role === 'super_admin' || user.role === 'admin'),
+    is_super_admin:    (user.role === 'super_admin' || user.role === 'admin' || user.role === 'head_office'),
     is_franchise_admin:(user.role === 'franchise_admin'),
     is_franchise_staff:(user.role === 'franchise_staff'),
   };

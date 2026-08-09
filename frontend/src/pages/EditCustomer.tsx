@@ -16,7 +16,7 @@ const INDIAN_STATES = [
 
 const emptyForm = () => ({
     // Basic
-    name: '', phone: '', email: '', customerType: 'Residential',
+    name: '', phone: '', email: '', customerType: 'Residential', gstin: '',
     // Location
     city: '', state: '', pinCode: '', country: 'India',
     // Address
@@ -42,6 +42,7 @@ export default function EditCustomer() {
                 phone: data.phone || '',
                 email: data.email || '',
                 customerType: data.customerType || 'Residential',
+                gstin: data.gstin || '',
                 city: data.city || '',
                 state: data.state || '',
                 pinCode: data.pinCode || '',
@@ -162,6 +163,14 @@ export default function EditCustomer() {
                                 </select>
                             </div>
                         </div>
+                        {form.customerType === 'Commercial' && (
+                            <div className="fr2">
+                                <div className="fg">
+                                    <label className="fl">GST Number</label>
+                                    <input className="fi" value={form.gstin} onChange={e => set('gstin', e.target.value.toUpperCase())} placeholder="e.g., 22AAAAA0000A1Z5" maxLength={15} />
+                                </div>
+                            </div>
+                        )}
                     </section>
 
                     {/* Section B — Location Details */}

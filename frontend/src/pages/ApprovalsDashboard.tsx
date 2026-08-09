@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
     CheckSquare, CheckCircle, XCircle, RotateCcw,
     X, RefreshCw, Building2, FileText, Receipt,
-    ChevronLeft
+    ChevronLeft, Eye
 } from 'lucide-react'
 import { api } from '../services/api'
 import { useAuth } from '../context/AuthContext'
@@ -82,7 +82,7 @@ export default function ApprovalsDashboard() {
         setSubmitting(true)
         try {
             const entity = action.item.type === 'quotation' ? 'quotations' : 'invoices'
-            const endpoint = `/api/${entity}/${action.item.id}/${action.type}`
+            const endpoint = `/api/${entity}/${encodeURIComponent(action.item.id)}/${action.type}`
             await api('POST', endpoint, {
                 reason:  action.type === 'reject' ? comment : undefined,
                 comment: action.type === 'request-changes' ? comment : undefined,
@@ -214,6 +214,13 @@ export default function ApprovalsDashboard() {
                                         </td>
                                         <td style={{ padding: '12px 14px' }}>
                                             <div style={{ display: 'flex', gap: '6px' }}>
+                                                <button
+                                                    onClick={() => navigate(item.type === 'quotation' ? `/view-quotation/${encodeURIComponent(item.id)}` : `/view-invoice/${encodeURIComponent(item.id)}`)}
+                                                    title={item.type === 'quotation' ? "View Quotation" : "View Invoice"}
+                                                    style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '5px 10px', background: 'var(--bg, #f8fafc)', color: '#64748b', border: '1px solid var(--border, #e2e8f0)', borderRadius: '6px', cursor: 'pointer', fontSize: '11px', fontWeight: 600 }}
+                                                >
+                                                    <Eye size={12} /> View
+                                                </button>
                                                 <button
                                                     onClick={() => setAction({ item, type: 'approve' })}
                                                     title="Approve"

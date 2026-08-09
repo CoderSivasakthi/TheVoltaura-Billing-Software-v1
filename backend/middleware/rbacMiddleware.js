@@ -19,8 +19,22 @@ const ROLE_PERMISSIONS = {
     approvals:  { view: true,  create: true,  edit: true,  delete: true,  approve: true  },
     branding:   { view: true,  create: true,  edit: true,  delete: true,  approve: true  },
   },
-  // Alias so legacy 'admin' role also gets full access
+  // Alias so legacy 'admin' and 'head_office' roles also get full access
   admin: {
+    customers:  { view: true,  create: true,  edit: true,  delete: true,  approve: true  },
+    quotations: { view: true,  create: true,  edit: true,  delete: true,  approve: true  },
+    invoices:   { view: true,  create: true,  edit: true,  delete: true,  approve: true  },
+    payments:   { view: true,  create: true,  edit: true,  delete: true,  approve: true  },
+    orders:     { view: true,  create: true,  edit: true,  delete: true,  approve: true  },
+    products:   { view: true,  create: true,  edit: true,  delete: true,  approve: true  },
+    amc:        { view: true,  create: true,  edit: true,  delete: true,  approve: true  },
+    reports:    { view: true,  create: true,  edit: true,  delete: true,  approve: true  },
+    settings:   { view: true,  create: true,  edit: true,  delete: true,  approve: true  },
+    franchises: { view: true,  create: true,  edit: true,  delete: true,  approve: true  },
+    approvals:  { view: true,  create: true,  edit: true,  delete: true,  approve: true  },
+    branding:   { view: true,  create: true,  edit: true,  delete: true,  approve: true  },
+  },
+  head_office: {
     customers:  { view: true,  create: true,  edit: true,  delete: true,  approve: true  },
     quotations: { view: true,  create: true,  edit: true,  delete: true,  approve: true  },
     invoices:   { view: true,  create: true,  edit: true,  delete: true,  approve: true  },

@@ -1,7 +1,7 @@
 # ─────────────────────────────────────────────
 # Node.js Express BFF (Backend-for-Frontend)
 # ─────────────────────────────────────────────
-FROM node:18-alpine
+FROM node:22-alpine
 
 # Install security updates
 RUN apk add --no-cache dumb-init

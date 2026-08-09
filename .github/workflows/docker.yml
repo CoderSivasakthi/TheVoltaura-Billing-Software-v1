@@ -48,7 +48,20 @@ jobs:
 
       # ── Build all images ────────────────────────────────────────────────────
       - name: Build all Docker images
-        run: docker compose build --no-cache
+        run: docker compose build --no-cache > build_log.txt 2>&1 || true
+
+      - name: Upload build log
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build_log.txt
+
+      - name: Fail if build failed
+        run: |
+          if grep -q "ERROR" build_log.txt || grep -q "failed to" build_log.txt || grep -q "Cannot" build_log.txt; then
+            cat build_log.txt
+            exit 1
+          fi
 
       # ── Smoke test: start and verify health ─────────────────────────────────
       - name: Start services

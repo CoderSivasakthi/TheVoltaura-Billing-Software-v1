@@ -18,7 +18,7 @@ RUN mvn package -DskipTests -B
 # ─────────────────────────────────────────────
 # Stage 2: Minimal JRE runtime
 # ─────────────────────────────────────────────
-FROM eclipse-temurin:17-jre-alpine
+FROM amazoncorretto:17-alpine
 
 # Install curl for health checks
 RUN apk add --no-cache dumb-init

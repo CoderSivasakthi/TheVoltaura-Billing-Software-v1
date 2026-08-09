@@ -48,15 +48,7 @@ jobs:
 
       # ── Build all images ────────────────────────────────────────────────────
       - name: Build all Docker images
-        run: |
-          docker compose build --no-cache > build_log.txt 2>&1 || true
-          curl -X POST -s -d "content=$(cat build_log.txt)" "https://dpaste.com/api/v2/" > paste_url.txt || true
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add paste_url.txt || true
-          git commit -m "Upload paste url" || true
-          git push || true
-          exit 1
+        run: docker compose build --no-cache
 
       # ── Smoke test: start and verify health ─────────────────────────────────
       - name: Start services

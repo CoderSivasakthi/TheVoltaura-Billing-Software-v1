@@ -1,0 +1,149 @@
+#1 [internal] load local bake definitions
+#1 reading from stdin 1.92kB done
+#1 DONE 0.0s
+
+#2 [spring-service internal] load build definition from Dockerfile
+#2 transferring dockerfile: 1.65kB 0.0s done
+#2 DONE 0.0s
+
+#3 [node-backend internal] load build definition from Dockerfile
+#3 transferring dockerfile: 1.04kB 0.0s done
+#3 DONE 0.0s
+
+#4 [frontend internal] load build definition from Dockerfile
+#4 transferring dockerfile: 1.59kB 0.0s done
+#4 DONE 0.0s
+
+#5 [nginx internal] load build definition from Dockerfile
+#5 transferring dockerfile: 408B 0.0s done
+#5 DONE 0.0s
+
+#6 [auth] library/maven:pull token for registry-1.docker.io
+#6 DONE 0.0s
+
+#7 [auth] library/node:pull token for registry-1.docker.io
+#7 DONE 0.0s
+
+#8 [auth] library/amazoncorretto:pull token for registry-1.docker.io
+#8 DONE 0.0s
+
+#9 [auth] library/nginx:pull token for registry-1.docker.io
+#9 DONE 0.0s
+
+#10 [nginx internal] load metadata for docker.io/library/nginx:1.25-alpine
+#10 ...
+
+#11 [spring-service internal] load metadata for docker.io/library/maven:3.9-eclipse-temurin-17
+#11 DONE 0.4s
+
+#10 [nginx internal] load metadata for docker.io/library/nginx:1.25-alpine
+#10 DONE 0.4s
+
+#12 [spring-service internal] load metadata for docker.io/library/amazoncorretto:17-alpine
+#12 DONE 0.4s
+
+#13 [nginx internal] load .dockerignore
+#13 transferring context: 2B done
+#13 DONE 0.0s
+
+#14 [spring-service internal] load .dockerignore
+#14 transferring context: 152B done
+#14 DONE 0.0s
+
+#15 [node-backend internal] load metadata for docker.io/library/node:22-alpine
+#15 DONE 0.4s
+
+#16 [frontend internal] load .dockerignore
+#16 transferring context: 177B done
+#16 DONE 0.0s
+
+#17 [node-backend internal] load .dockerignore
+#17 transferring context: 1.12kB done
+#17 DONE 0.0s
+
+#18 [nginx internal] load build context
+#18 transferring context: 5.14kB done
+#18 DONE 0.0s
+
+#19 [spring-service internal] load build context
+#19 transferring context: 50.84kB 0.0s done
+#19 DONE 0.0s
+
+#20 [frontend 1/9] FROM docker.io/library/node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32
+#20 resolve docker.io/library/node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 0.0s done
+#20 ...
+
+#21 [node-backend internal] load build context
+#21 transferring context: 288.51kB 0.0s done
+#21 DONE 0.1s
+
+#22 [node-backend 5/9] RUN npm ci --production
+#22 CACHED
+
+#23 [node-backend 7/9] COPY backend/ ./backend/
+#23 CACHED
+
+#24 [node-backend 3/9] WORKDIR /app
+#24 CACHED
+
+#25 [node-backend 2/9] RUN apk add --no-cache dumb-init
+#25 CACHED
+
+#26 [node-backend 6/9] COPY server.js ./
+#26 CACHED
+
+#27 [node-backend 4/9] COPY package.json package-lock.json ./
+#27 CACHED
+
+#28 [node-backend 8/9] COPY data/ ./data/
+#28 ERROR: failed to calculate checksum of ref 7n5k7jq1e7dp88aajivvcc8tf::ziabvjoc1mimruizthrxy40gv: "/data": not found
+
+#29 [frontend internal] load build context
+#29 transferring context: 1.09MB 0.0s done
+#29 DONE 0.1s
+
+#30 [nginx stage-1 1/5] FROM docker.io/library/nginx:1.25-alpine@sha256:516475cc129da42866742567714ddc681e5eed7b9ee0b9e9c015e464b4221a00
+#30 resolve docker.io/library/nginx:1.25-alpine@sha256:516475cc129da42866742567714ddc681e5eed7b9ee0b9e9c015e464b4221a00 0.0s done
+#30 DONE 0.1s
+
+#31 [spring-service stage-1 1/6] FROM docker.io/library/amazoncorretto:17-alpine@sha256:e1138bf0cca62e04692de650ffe8923f35c39fcb554458c7acd98efc2d135144
+#31 resolve docker.io/library/amazoncorretto:17-alpine@sha256:e1138bf0cca62e04692de650ffe8923f35c39fcb554458c7acd98efc2d135144 0.0s done
+#31 sha256:55afa1ecc21d2bb5e5045f32dafee56272ffd89860bac26f6c32123439af26a4 81.29kB / 3.85MB 0.0s
+#31 sha256:d27e94e76fff4b78747bfbd72ea73dee354f8a8f818401a3807fed3574eb38ef 373.36kB / 148.96MB 0.0s
+#31 ...
+
+#32 [spring-service stage-1 2/6] RUN apk add --no-cache dumb-init
+#32 CANCELED
+
+#33 [frontend builder 2/6] WORKDIR /app
+#33 CANCELED
+
+#34 [spring-service builder 1/6] FROM docker.io/library/maven:3.9-eclipse-temurin-17@sha256:4015718012bbf1113ec6cfae2b950be328d90265ceb60f92b26c3ea7c4d14ee8
+#34 resolve docker.io/library/maven:3.9-eclipse-temurin-17@sha256:4015718012bbf1113ec6cfae2b950be328d90265ceb60f92b26c3ea7c4d14ee8 0.0s done
+#34 DONE 0.1s
+
+#20 [frontend 1/9] FROM docker.io/library/node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32
+#20 sha256:16da5a6403776464b5bf551ef294de57da242eac594527ea551a46e7f76ac2d6 445B / 445B 0.0s done
+#20 sha256:a2980c1fee17dfd6263234b253955e0e9d5f38d47c0e71c001139897134899d0 81.32kB / 1.26MB 0.0s
+#20 sha256:efbef6f9e333972a10ca323e700496a64e7ddcc3a6725e6afbbae52e690f4a4a 0B / 52.63MB
+------
+ > [node-backend 8/9] COPY data/ ./data/:
+------
+Dockerfile:20
+
+--------------------
+
+  18 |     COPY server.js ./
+
+  19 |     COPY backend/ ./backend/
+
+  20 | >>> COPY data/ ./data/
+
+  21 |     
+
+  22 |     # Use the built-in non-root node user
+
+--------------------
+
+target node-backend: failed to solve: failed to compute cache key: failed to calculate checksum of ref 7n5k7jq1e7dp88aajivvcc8tf::ziabvjoc1mimruizthrxy40gv: "/data": not found
+

@@ -17,7 +17,9 @@ RUN npm ci --production
 # Copy application source files
 COPY server.js ./
 COPY backend/ ./backend/
-COPY data/ ./data/
+
+# Create data directory for uploads instead of copying (as it's in .gitignore)
+RUN mkdir -p ./data/uploads
 
 # Use the built-in non-root node user
 RUN chown -R node:node /app

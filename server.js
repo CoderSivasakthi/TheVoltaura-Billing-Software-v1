@@ -34,7 +34,21 @@ if (process.env.DOCKER_DB === 'true') {
   });
 }
 
-app.use(cors());
+const allowedOrigins = (process.env.CORS_ORIGINS || process.env.PUBLIC_APP_ORIGIN || '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+
+app.use(cors({
+  origin: (origin, cb) => {
+    if (!origin) return cb(null, true);
+    if (allowedOrigins.length === 0) return cb(null, true);
+    if (allowedOrigins.includes(origin)) return cb(null, true);
+    if (/^https:\/\/[\w-]+\.github\.io$/.test(origin)) return cb(null, true);
+    return cb(null, false);
+  },
+  credentials: true,
+}));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
@@ -637,9 +651,7 @@ async function createEntity(entityName, payload) {
 
 async function findEntity(entityName, id) {
   if (!supa) throw new Error('Database connection failed. Supabase is required.');
-  const res = await supa.find(entityName, id);
-  if (res === null) throw new Error('Database find operation failed');
-  return res;
+  return await supa.find(entityName, id);
 }
 
 async function updateEntity(entityName, id, updates) {
@@ -698,56 +710,64 @@ app.post('/api/auth/register', async (req, res) => {
 });
 
 app.post('/api/auth/login', async (req, res) => {
-  const { username, password, franchise_id: loginFranchiseId } = req.body || {};
-  const users = await getUsers();
-  const user = users.find(u => u.username === username);
-  // allow demo super admin (admin / admin)
-  if (!user && username === 'admin' && password === 'admin') {
-    const token = jwt.sign({ username: 'admin', role: 'super_admin', tenant_id: 'admin', franchise_id: null }, JWT_SECRET, { expiresIn: '8h' });
-    return res.json({
-      token,
-      role: 'super_admin',
-      user: { username: 'admin', role: 'super_admin', tenant_id: 'admin', franchise_id: null },
-      permissions: getPermissionsForRole('super_admin')
-    });
-  }
-  if (!user) return res.status(401).json({ error: 'Invalid credentials' });
-
-  // Verify franchise_id matches if user is a franchise user
-  if (user.franchise_id && loginFranchiseId && user.franchise_id !== loginFranchiseId) {
-    return res.status(401).json({ error: 'Invalid Franchise ID' });
-  }
-
-  // Check franchise is not suspended
-  if (user.franchise_id) {
+  try {
+    const { username, password, franchise_id: loginFranchiseId } = req.body || {};
+    let users = [];
     try {
-      const { data: fr } = await supa.rawClient.from('franchises').select('status').eq('id', user.franchise_id).single();
-      if (fr && fr.status === 'Suspended') {
-        return res.status(403).json({ error: 'Account suspended', message: 'Your franchise account has been suspended. Please contact TheVoltaura Head Office.' });
-      }
-    } catch (e) { /* non-fatal */ }
+      users = (await getUsers()) || [];
+    } catch (e) {
+      console.warn('[auth] user lookup failed:', e.message);
+      users = [];
+    }
+    const user = users.find(u => u.username === username);
+    // allow demo super admin (admin / admin)
+    if (!user && username === 'admin' && password === 'admin') {
+      const token = jwt.sign({ username: 'admin', role: 'super_admin', tenant_id: 'admin', franchise_id: null }, JWT_SECRET, { expiresIn: '8h' });
+      return res.json({
+        token,
+        role: 'super_admin',
+        user: { username: 'admin', role: 'super_admin', tenant_id: 'admin', franchise_id: null },
+        permissions: getPermissionsForRole('super_admin')
+      });
+    }
+    if (!user) return res.status(401).json({ error: 'Invalid credentials' });
+
+    if (user.franchise_id && loginFranchiseId && user.franchise_id !== loginFranchiseId) {
+      return res.status(401).json({ error: 'Invalid Franchise ID' });
+    }
+
+    if (user.franchise_id) {
+      try {
+        const { data: fr } = await supa.rawClient.from('franchises').select('status').eq('id', user.franchise_id).single();
+        if (fr && fr.status === 'Suspended') {
+          return res.status(403).json({ error: 'Account suspended', message: 'Your franchise account has been suspended. Please contact TheVoltaura Head Office.' });
+        }
+      } catch (e) { /* non-fatal */ }
+    }
+
+    const ok = await bcrypt.compare(password, user.password);
+    if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
+
+    try { await updateEntity('users', user.id, { last_login_at: new Date().toISOString() }); } catch(e) {}
+    
+    const role = (user.role === 'admin' || user.role === 'head_office') ? 'super_admin' : (user.role || 'franchise_admin');
+    const tokenPayload = { 
+      username:    user.username, 
+      role,
+      tenant_id:   user.tenant_id   || 'admin', 
+      franchise_id: user.franchise_id || null,
+    };
+    const token = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: '8h' });
+    res.json({
+      token,
+      role,
+      user: tokenPayload,
+      permissions: getPermissionsForRole(role),
+    });
+  } catch (e) {
+    console.error("500 ERROR CAUGHT:", e);
+    res.status(500).json({ error: e.message || 'Server error' });
   }
-
-  const ok = await bcrypt.compare(password, user.password);
-  if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
-
-  // Update last_login_at
-  try { await updateEntity('users', user.id, { last_login_at: new Date().toISOString() }); } catch(e) {}
-  
-  const role = (user.role === 'admin' || user.role === 'head_office') ? 'super_admin' : (user.role || 'franchise_admin');
-  const tokenPayload = { 
-    username:    user.username, 
-    role,
-    tenant_id:   user.tenant_id   || 'admin', 
-    franchise_id: user.franchise_id || null,
-  };
-  const token = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: '8h' });
-  res.json({
-    token,
-    role,
-    user: tokenPayload,
-    permissions: getPermissionsForRole(role),
-  });
 });
 
 function requireAuth(req, res, next) {
@@ -925,7 +945,8 @@ app.post('/api/quotations', requireAuth, async (req, res) => {
     const approvalDefaults = req.tenant?.is_super_admin
       ? { approval_status: 'Approved' }
       : { approval_status: 'Draft' };
-    const payload = Object.assign({ id: autoId, status: 'Quoted', createdAt: new Date().toISOString() }, approvalDefaults, tp, req.body);
+    const payload = Object.assign({ id: autoId, status: 'Draft', createdAt: new Date().toISOString() }, approvalDefaults, tp, req.body);
+    if (payload.status === 'Quoted') payload.status = 'Sent';
     const record = await createEntity('quotations', payload);
     try { broadcastEvent({ type: 'quotation.created', data: record }, record.organization_id || null); } catch (e) { }
     res.status(201).json(record);
@@ -1354,6 +1375,7 @@ app.get('/api/invoices', requireAuth, async (req, res) => {
         total: i.grand_total || i.grandTotal, // For Reports.tsx backward compatibility
         paid: i.paid || 0,
         status: i.status,
+        approval_status: i.approval_status || i.approvalStatus || 'Draft',
         createdAt: i.created_at || i.createdAt,
         items: i.items || []
     }));
@@ -2112,29 +2134,34 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'frontend/dist/index.html'));
 });
 
-server.listen(PORT, async () => {
+server.listen(PORT, '0.0.0.0', async () => {
   console.log('');
-  
+  console.log(`Node API listening on port ${PORT}`);
+
   const hasUrl = !!process.env.SUPABASE_URL;
   const hasKey = !!(process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_KEY);
+  const requireDb = process.env.REQUIRE_DATABASE !== 'false';
+
   if (!hasUrl || !hasKey) {
     if (!hasUrl) console.log('❌ Missing SUPABASE_URL');
-    if (!hasKey) console.log('❌ Missing SUPABASE_SERVICE_KEY');
-    process.exit(1);
+    if (!hasKey) console.log('❌ Missing SUPABASE_SERVICE_KEY / SUPABASE_KEY');
+    if (requireDb) {
+      process.exit(1);
+    }
+    console.log('⚠️  Continuing without Supabase (CI smoke / local health checks only)');
+    return;
   }
 
   const dbUrl = process.env.DATABASE_URL;
-  if (!dbUrl || dbUrl.includes('postgres:postgres@db:5432')) {
-    console.log('====================================');
-    console.log('DATABASE INITIALIZATION FAILED');
-    console.log('====================================');
-    console.log('Error: DATABASE_URL is missing or invalid.');
-    console.log('Please add your direct Postgres connection string to .env:');
-    console.log('DATABASE_URL=postgres://postgres.[YOUR-PROJECT-ID]:[YOUR-PASSWORD]@aws-0-[REGION].pooler.supabase.com:6543/postgres\n');
-    process.exit(1);
+  const looksLikeLocalDockerDb = !dbUrl || dbUrl.includes('postgres:postgres@db:5432') || dbUrl.includes('postgres:password@db:');
+  if (looksLikeLocalDockerDb) {
+    console.log('ℹ️  DATABASE_URL not set to Supabase Postgres. Skipping SQL schema bootstrap.');
+    console.log('   REST access via SUPABASE_URL/SUPABASE_KEY remains active.');
+    return;
   }
 
-  const pool = new Pool({ connectionString: dbUrl, ssl: { rejectUnauthorized: false } });
+  const poolConfig = { connectionString: dbUrl, ssl: { rejectUnauthorized: false } };
+  const pool = new Pool(poolConfig);
   
   try {
     const client = await pool.connect();

@@ -1,6 +1,19 @@
 // ── API helpers — ported from script.js ──────────────────────────
 
-export const API_BASE = import.meta.env.VITE_API_URL || `http://${window.location.hostname || 'localhost'}:5001`;
+function resolveApiBase(): string {
+    const runtime = typeof window !== 'undefined' ? (window as any).__API_BASE__ : '';
+    const fromEnv = import.meta.env.VITE_API_URL as string | undefined;
+    const raw = (runtime || fromEnv || '').trim();
+    if (raw) return raw.replace(/\/$/, '');
+    return '';
+}
+
+export const API_BASE = resolveApiBase();
+
+export function apiUrl(path: string): string {
+    const p = path.startsWith('/') ? path : `/${path}`;
+    return `${API_BASE}${p}`;
+}
 
 export function getToken(): string | null {
     return localStorage.getItem('sf_token');
@@ -22,8 +35,12 @@ export async function api(method: string, path: string, body?: unknown, silent: 
 
     if (!silent) toggleLoader(true);
     try {
-        const r = await fetch(`${API_BASE}${path}`, opts);
-        if (!r.ok) throw new Error(`${r.status}`);
+        const r = await fetch(apiUrl(path), opts);
+        if (!r.ok) {
+            const errBody = await r.json().catch(() => ({}));
+            throw new Error(errBody.error || errBody.message || `Request failed (${r.status})`);
+        }
+        if (r.status === 204) return null;
         return await r.json();
     } finally {
         if (!silent) toggleLoader(false);
@@ -68,6 +85,7 @@ export function statusTag(s: string | undefined): string {
         // Quotation lifecycle statuses
         Quoted: 't-quoted',
         Invoiced: 't-invoiced',
+        'Ready for Approval': 't-partial',
         'Documents Pending': 't-orange',
         Approved: 't-paid',
         Rejected: 't-overdue',

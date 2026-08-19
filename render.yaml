@@ -1,0 +1,27 @@
+# Free-tier backend host. Connect this repo in Render, then put the
+# public service URL into GitHub Secret PUBLIC_API_URL (no trailing slash).
+# Also add RENDER_DEPLOY_HOOK so GitHub Actions can redeploy on push.
+
+services:
+  - type: web
+    name: thevoltaura-billing
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: PUBLIC_APP_ORIGIN
+        sync: false

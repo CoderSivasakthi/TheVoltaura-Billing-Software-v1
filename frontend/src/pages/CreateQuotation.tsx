@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { User, Save, X, Plus, Copy, Building, GripVertical, Trash2, CheckCircle } from 'lucide-react'
-import { api, fmt, toast, displayName } from '../services/api'
+import { api, apiUrl, fmt, toast, displayName } from '../services/api'
 import { useSettings } from '../context/SettingsContext'
 import DocumentUploader from '../components/DocumentUploader'
 import { SolarCalculationEngine, type LineItem } from '../services/SolarCalculationEngine'
@@ -242,8 +242,7 @@ export default function CreateQuotation() {
 
             // Note: If 'id' is undefined (new quotation), we pass 'new' in URL.
             // The backend handles it safely and skips linking to quotation.
-            const API_BASE = import.meta.env.VITE_API_URL || `http://${window.location.hostname || 'localhost'}:5001`;
-            const res = await fetch(`${API_BASE}/api/quotations/${encodeURIComponent(id || 'new')}/complete-customer`, {
+            const res = await fetch(apiUrl(`/api/quotations/${encodeURIComponent(id || 'new')}/complete-customer`), {
                 method: 'POST',
                 headers: {
                     'x-demo-auth': localStorage.getItem('sf_token') || ''

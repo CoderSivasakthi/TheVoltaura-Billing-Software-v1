@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { api, toast } from '../services/api';
+import { api, apiUrl, toast } from '../services/api';
 
 interface AdvancePaymentModalProps {
     quotation: any;
@@ -99,8 +99,11 @@ export default function AdvancePaymentModal({ quotation, onClose, onConfirm }: A
                 const formData = new FormData();
                 formData.append('document', proofFile);
                 try {
-                    const uploadRes = await fetch('http://localhost:5001/api/upload', {
+                    const uploadRes = await fetch(apiUrl('/api/upload'), {
                         method: 'POST',
+                        headers: {
+                            'x-demo-auth': localStorage.getItem('sf_token') || ''
+                        },
                         body: formData
                     });
                     if (uploadRes.ok) {

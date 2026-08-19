@@ -97,10 +97,10 @@ export default function Quotations() {
             <div className="card" style={{ overflow: 'hidden' }}>
                 <div className="tw">
                     <table className="tbl">
-                        <thead><tr><th>Quotation #</th><th>{t('Customer')}</th><th>{t('Date')}</th><th>{t('Amount')}</th><th>{t('Status')}</th><th>{t('Action')}</th></tr></thead>
+                        <thead><tr><th>Quotation #</th><th>{t('Customer')}</th><th>{t('Date')}</th><th>{t('Amount')}</th><th>{t('Status')}</th><th>Approval</th><th>{t('Action')}</th></tr></thead>
                         <tbody id="quotationsBody">
                             {paginated.length === 0 ? (
-                                <tr><td colSpan={6} className="empty-state">No quotations found</td></tr>
+                                <tr><td colSpan={7} className="empty-state">No quotations found</td></tr>
                             ) : paginated.map((q: any) => (
                                 <tr
                                     key={q.id}
@@ -115,6 +115,7 @@ export default function Quotations() {
                                     <td>{fmtDate(q.createdAt || q.date)}</td>
                                     <td>{fmt(q.total || q.grandTotal)}</td>
                                     <td dangerouslySetInnerHTML={{ __html: statusTag(q.status) }}></td>
+                                    <td dangerouslySetInnerHTML={{ __html: statusTag(q.approval_status || q.approvalStatus) }}></td>
                                     <td onClick={e => e.stopPropagation()}>
                                         {(q.status === 'Invoiced') ? (
                                             <button className="abl" onClick={() => navigate(`/invoices`)}><Eye size={12} /> View Invoice</button>

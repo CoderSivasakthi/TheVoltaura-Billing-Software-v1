@@ -1,0 +1,73 @@
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install and build
+        working-directory: frontend
+        env:
+          VITE_API_URL: ${{ secrets.PUBLIC_API_URL }}
+          VITE_BASE_PATH: /${{ github.event.repository.name }}/
+          VITE_ROUTER_MODE: hash
+          PUBLIC_API_URL: ${{ secrets.PUBLIC_API_URL }}
+        run: |
+          npm ci
+          npm run build
+          cp dist/index.html dist/404.html
+          touch dist/.nojekyll
+          # Runtime API origin (GitHub Secret PUBLIC_API_URL). Empty is valid:
+          # the SPA then uses same-origin /api only when hosted with the backend.
+          printf "window.__API_BASE__ = %s;\n" "$(python3 -c 'import json,os; print(json.dumps(os.environ.get("PUBLIC_API_URL") or ""))')" > dist/config.js
+
+      - name: Inject runtime API config
+        working-directory: frontend
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('dist/index.html')
+          html = p.read_text()
+          tag = '<script src="./config.js"></script>'
+          if tag not in html:
+              html = html.replace('<head>', '<head>\n  ' + tag, 1)
+              p.write_text(html)
+          PY
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: frontend/dist
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

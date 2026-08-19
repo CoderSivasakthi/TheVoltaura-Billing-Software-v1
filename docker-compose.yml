@@ -56,7 +56,7 @@ services:
       node-backend:
         condition: service_healthy
       spring-service:
-        condition: service_healthy
+        condition: service_started
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1/nginx-health"]
       interval: 30s
@@ -72,17 +72,16 @@ services:
     container_name: solar-node-backend
     restart: unless-stopped
     env_file:
-      - .env
+      - path: .env
+        required: false
     environment:
       - NODE_ENV=production
       - PORT=5001
+      - REQUIRE_DATABASE=${REQUIRE_DATABASE:-false}
     networks:
       - solar-net
-    depends_on:
-      spring-service:
-        condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:5001/api/health"]
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:5001/api/health"]
       interval: 30s
       timeout: 5s
       start_period: 25s
@@ -97,16 +96,14 @@ services:
     container_name: solar-spring-service
     restart: unless-stopped
     env_file:
-      - .env
+      - path: .env
+        required: false
     environment:
-      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-docker}
-      - SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL}
-      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
-      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-docker}
     networks:
       - solar-net
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8081/spring/health"]
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8081/spring/health"]
       interval: 30s
       timeout: 10s
       start_period: 90s

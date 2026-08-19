@@ -1,42 +1,31 @@
-# ─────────────────────────────────────────────────────────────
-# .dockerignore — Root context (node-backend Docker build)
-# ─────────────────────────────────────────────────────────────
-# Exclude files not needed in the Node BFF container
-
-# Dependencies (installed fresh inside container)
+# Dependencies
 node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+**/node_modules/
+frontend/dist/
 
-# Frontend source (not needed in BFF container)
-frontend/
-
-# Spring microservice (separate container)
-spring-microservice/
-
-# Nginx (separate container)
-nginx/
-
-# Docker/CI files
-/Dockerfile
-/.dockerignore
-docker-compose*.yml
+# Git / CI / docs
+.git/
 .github/
+*.md
 
-# Dev/IDE files
+# Secrets and local env
 .env
-.env.example
+.env.*
+!.env.example
+
+# Spring build output
+spring-microservice/target/
+
+# Logs / OS
+*.log
+.DS_Store
 .vscode/
 .idea/
-.DS_Store
+data/uploads/
 
-# Logs and local data
-*.log
-# data/ (needed for build)
-
-# Legacy static files (not served by BFF in Docker; Nginx handles frontend)
-# index.html
-# login.html
-# script.js
-# styles.css
+# Test / scratch scripts (not required at runtime)
+test_*.js
+fix_*.js
+check_*.js
+inspect-*.js
+run_e2e_test.js

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowRightCircle, Printer, Edit3, Share2, FileText, CheckCircle } from 'lucide-react'
+import { ArrowRightCircle, Printer, Edit3, Share2, FileText, CheckCircle, XCircle } from 'lucide-react'
 import { api, toast } from '../services/api'
 import { useSettings } from '../context/SettingsContext'
 import { useAuth } from '../context/AuthContext'
@@ -299,6 +299,28 @@ export default function ViewQuotation() {
         }
     }
 
+    const handleApprove = async () => {
+        try {
+            await api('POST', `/api/quotations/${encodeURIComponent(id || '')}/approve`);
+            toast('Quotation approved');
+            fetchDoc();
+        } catch (e: any) {
+            toast(e.message || 'Failed to approve quotation', 'error');
+        }
+    }
+
+    const handleReject = async () => {
+        const reason = window.prompt('Rejection reason');
+        if (!reason || !reason.trim()) return;
+        try {
+            await api('POST', `/api/quotations/${encodeURIComponent(id || '')}/reject`, { reason: reason.trim() });
+            toast('Quotation rejected');
+            fetchDoc();
+        } catch (e: any) {
+            toast(e.message || 'Failed to reject quotation', 'error');
+        }
+    }
+
     if (loading) {
         return <div className="page active" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>Loading...</div>
     }
@@ -544,12 +566,22 @@ export default function ViewQuotation() {
                         Submit for Approval
                     </button>
                 )}
+                {auth.isSuperAdmin() && doc.approval_status === 'Submitted' && (
+                    <>
+                        <button className="btn btn-success btn-sm" onClick={handleApprove}>
+                            <CheckCircle size={14} /> Approve
+                        </button>
+                        <button className="btn btn-secondary btn-sm" onClick={handleReject} style={{ color: '#dc2626', borderColor: '#fecaca', background: '#fef2f2' }}>
+                            <XCircle size={14} /> Reject
+                        </button>
+                    </>
+                )}
                 {doc.status !== 'Confirmed Order' && doc.status !== 'Invoiced' && doc.status !== 'Completed' && (
                     <button className="btn btn-secondary btn-sm" onClick={() => setShowAdvanceModal(true)} style={{ color: '#10B981', borderColor: '#10B981', background: '#F0FDF4' }}>
                         <CheckCircle size={14} /> Confirm Advance Payment
                     </button>
                 )}
-                <button className="btn btn-primary btn-sm" onClick={() => navigate(`/quotation/edit/${doc.id}`)} disabled={doc.status === 'Confirmed Order' || doc.status === 'Invoiced' || doc.status === 'Completed'}>
+                <button className="btn btn-primary btn-sm" onClick={() => navigate(`/quotation/edit/${encodeURIComponent(doc.id)}`)} disabled={doc.status === 'Confirmed Order' || doc.status === 'Invoiced' || doc.status === 'Completed'}>
                     <Edit3 size={14} /> Edit
                 </button>
                 <button className="btn btn-secondary btn-sm" onClick={handlePrint}>

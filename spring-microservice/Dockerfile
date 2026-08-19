@@ -20,26 +20,21 @@ RUN mvn package -DskipTests -B
 # ─────────────────────────────────────────────
 FROM amazoncorretto:17-alpine
 
-# Install curl for health checks
-RUN apk add --no-cache dumb-init
+RUN apk add --no-cache dumb-init wget
 
 WORKDIR /app
 
-# Copy JAR from build stage
 COPY --from=builder /build/target/spring-microservice-0.1.0.jar app.jar
+COPY docker-entrypoint.sh /app/docker-entrypoint.sh
 
-# Create and use non-root user
-RUN addgroup -S spring && adduser -S spring -G spring
-RUN chown spring:spring /app/app.jar
+RUN addgroup -S spring && adduser -S spring -G spring \
+    && chmod +x /app/docker-entrypoint.sh \
+    && chown spring:spring /app/app.jar /app/docker-entrypoint.sh
 USER spring
 
 EXPOSE 8081
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \
-  CMD wget -qO- http://localhost:8081/spring/health || exit 1
+  CMD wget -qO- http://127.0.0.1:8081/spring/health || exit 1
 
-ENTRYPOINT ["dumb-init", "--"]
-CMD ["java", \
-     "-Djava.security.egd=file:/dev/./urandom", \
-     "-Dspring.profiles.active=${SPRING_PROFILES_ACTIVE:-docker}", \
-     "-jar", "app.jar"]
+ENTRYPOINT ["dumb-init", "--", "/app/docker-entrypoint.sh"]

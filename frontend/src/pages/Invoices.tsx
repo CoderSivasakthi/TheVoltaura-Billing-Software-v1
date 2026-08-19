@@ -208,6 +208,9 @@ export default function Invoices() {
                                             <div className="ilc-col-status">
                                                 <div style={{ fontSize: '12px', color: 'var(--g500)', textTransform: 'uppercase', marginBottom: '4px' }}>{t('Status')}</div>
                                                 <span dangerouslySetInnerHTML={{ __html: statusTag(inv.status) }}></span>
+                                                {inv.approval_status && (
+                                                    <div style={{ marginTop: 6 }} dangerouslySetInnerHTML={{ __html: statusTag(inv.approval_status) }} />
+                                                )}
                                             </div>
                                             <div className="ilc-col-due">
                                                 <div style={{ fontSize: '12px', color: 'var(--g500)', textTransform: 'uppercase', marginBottom: '4px' }}>{t('Amount')} Due</div>

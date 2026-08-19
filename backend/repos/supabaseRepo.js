@@ -5,16 +5,23 @@
 'use strict';
 
 const { createClient } = require('@supabase/supabase-js');
+const { mapToDb, enrichRecord, extractUnknownColumn } = require('../utils/rowMapper');
 
 const SUPABASE_URL  = process.env.SUPABASE_URL;
 const SERVICE_KEY   = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_KEY;
 
-const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
-  auth: { persistSession: false },
-});
+let supabase = null;
+if (SUPABASE_URL && SERVICE_KEY) {
+  supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
+    auth: { persistSession: false },
+  });
+} else {
+  console.warn('[supabaseRepo] SUPABASE_URL / key not set — database operations will fail until configured.');
+}
 
 async function checkTables() {
   try {
+    if (!supabase) return false;
     const { error } = await supabase.from('customers').select('id').limit(1);
     return !error && (!error?.code?.includes('PGRST'));
   } catch (e) {
@@ -85,7 +92,74 @@ const TABLE_MAP = {
 };
 function resolveTable(name) { return TABLE_MAP[name] || name; }
 
+function parentIdColumn(table) {
+  if (table === 'quotations') return 'quotation_id';
+  if (table === 'invoices') return 'invoice_id';
+  return null;
+}
+
+function lineItemTable(table) {
+  if (table === 'quotations') return 'quotation_items';
+  if (table === 'invoices') return 'invoice_items';
+  return null;
+}
+
+function normalizeLineItem(it, parentCol, parentId, index) {
+  return {
+    [parentCol]: parentId,
+    product_id: it.product_id || it.productId || null,
+    product_name: it.product_name || it.productName || it.name || 'Item',
+    description: it.description || '',
+    hsn_code: it.hsn_code || it.hsnCode || it.hsn || '',
+    qty: Number(it.qty || it.quantity || 1),
+    unit: it.unit || 'Nos',
+    price: Number(it.price || it.rate || 0),
+    gst_rate: Number(it.gst_rate || it.gstRate || 18),
+    sort_order: index,
+  };
+}
+
+async function replaceLineItems(table, parentId, items) {
+  const child = lineItemTable(table);
+  const parentCol = parentIdColumn(table);
+  if (!supabase || !child || !parentCol || !parentId || !Array.isArray(items)) return;
+  const rows = items
+    .filter((it) => it && (it.product_name || it.productName || it.name))
+    .map((it, i) => normalizeLineItem(it, parentCol, parentId, i));
+  await supabase.from(child).delete().eq(parentCol, parentId);
+  if (rows.length) {
+    const { error } = await supabase.from(child).insert(rows);
+    if (error) console.warn('[supabaseRepo] line items insert failed:', error.message);
+  }
+}
+
+async function fetchLineItems(table, parentId) {
+  const child = lineItemTable(table);
+  const parentCol = parentIdColumn(table);
+  if (!supabase || !child || !parentCol || !parentId) return [];
+  const { data, error } = await supabase.from(child).select('*').eq(parentCol, parentId).order('sort_order', { ascending: true });
+  if (error) return [];
+  return (data || []).map((it) => ({
+    ...it,
+    productId: it.product_id,
+    productName: it.product_name,
+    hsnCode: it.hsn_code,
+    gstRate: it.gst_rate,
+    quantity: it.qty,
+  }));
+}
+
+async function attachLineItemsIfNeeded(table, rows) {
+  if (!Array.isArray(rows) || (table !== 'quotations' && table !== 'invoices')) return rows;
+  return Promise.all(rows.map(async (row) => {
+    if (Array.isArray(row.items) && row.items.length > 0) return row;
+    row.items = await fetchLineItems(table, row.id);
+    return row;
+  }));
+}
+
 async function list(table) {
+  if (!supabase) { logError('list', table, { message: 'Supabase client not configured' }); return null; }
   const resolved = resolveTable(table);
   let query = supabase.from(resolved).select('*');
   // Only order by created_at if the table is expected to have it
@@ -97,49 +171,110 @@ async function list(table) {
     logError('list', table, error); 
     return null; 
   }
-  return data || [];
+  return attachLineItemsIfNeeded(resolved, (data || []).map(enrichRecord));
+}
+
+async function mutateWithColumnFallback(table, row, mutator) {
+  let current = { ...row };
+  const quotationStatusMap = {
+    Quoted: 'Sent',
+    'Ready for Approval': 'Sent',
+    'Documents Pending': 'Draft',
+    Invoiced: 'Converted',
+    'Confirmed Order': 'Accepted',
+    Installation: 'Accepted',
+    Completed: 'Accepted',
+    'Quotation Sent': 'Sent',
+    'Advance Pending': 'Sent',
+    'Advance Received': 'Accepted',
+  };
+  const invoiceStatusMap = {
+    Partial: 'Partially Paid',
+    'Partially Paid': 'Partially Paid',
+  };
+  for (let i = 0; i < 25; i++) {
+    const { data, error } = await mutator(current);
+    if (!error) return data;
+    const msg = String(error?.message || error?.details || '');
+    const col = extractUnknownColumn(error);
+    if (col && Object.prototype.hasOwnProperty.call(current, col)) {
+      delete current[col];
+      continue;
+    }
+    if (/chk_quotation_status|quotations_status_check/i.test(msg) && current.status && quotationStatusMap[current.status]) {
+      current.status = quotationStatusMap[current.status];
+      continue;
+    }
+    if (/chk_invoice_status|invoices_status_check/i.test(msg) && current.status && invoiceStatusMap[current.status]) {
+      current.status = invoiceStatusMap[current.status];
+      continue;
+    }
+    logError('update', table, error, current);
+    return null;
+  }
+  return null;
 }
 
 async function create(table, payload) {
-  const { data, error } = await supabase
-    .from(resolveTable(table))
-    .insert([payload])
-    .select()
-    .single();
-  if (error) { 
-    logError('create', table, error, payload); 
-    return null; 
+  if (!supabase) { logError('create', table, { message: 'Supabase client not configured' }, payload); return null; }
+  const resolved = resolveTable(table);
+  const row = mapToDb(payload);
+  const data = await mutateWithColumnFallback(resolved, row, (current) =>
+    supabase.from(resolved).insert([current]).select().single()
+  );
+  if (!data) {
+    logError('create', table, { message: 'insert failed after column fallback' }, payload);
+    return null;
   }
-  logOperation('create', table, payload);
-  return data;
+  logOperation('create', table, data);
+  const record = enrichRecord(data);
+  if (payload && payload.items) {
+    await replaceLineItems(resolved, record.id, payload.items);
+    record.items = await fetchLineItems(resolved, record.id);
+  }
+  return record;
 }
 
 async function find(table, id) {
+  if (!supabase) { logError('read', table, { message: 'Supabase client not configured' }, { id }); return null; }
   const { data, error } = await supabase
     .from(resolveTable(table))
     .select('*')
     .eq('id', id)
-    .single();
+    .maybeSingle();
   if (error && error.code !== 'PGRST116') { 
     logError('read', table, error, { id }); 
     return null; 
   }
-  return data || null;
+  if (!data) return null;
+  const record = enrichRecord(data);
+  if (resolved === 'quotations' || resolved === 'invoices') {
+    if (!Array.isArray(record.items) || record.items.length === 0) {
+      record.items = await fetchLineItems(resolved, id);
+    }
+  }
+  return record;
 }
 
 async function update(table, id, updates) {
-  const { data, error } = await supabase
-    .from(resolveTable(table))
-    .update(updates)
-    .eq('id', id)
-    .select()
-    .single();
-  if (error) { 
-    logError('update', table, error, { id, updates }); 
-    return null; 
+  if (!supabase) { logError('update', table, { message: 'Supabase client not configured' }, { id, updates }); return null; }
+  const resolved = resolveTable(table);
+  const row = mapToDb(updates);
+  delete row.id;
+  const data = await mutateWithColumnFallback(resolved, row, (current) =>
+    supabase.from(resolved).update(current).eq('id', id).select().single()
+  );
+  if (!data) {
+    logError('update', table, { message: 'update failed after column fallback' }, { id, updates });
+    return null;
   }
-  logOperation('update', table, updates);
-  return data;
+  logOperation('update', table, data);
+  const record = enrichRecord(data);
+  if (updates && updates.items) {
+    await replaceLineItems(resolved, id, updates.items);
+    record.items = await fetchLineItems(resolved, id);
+  }
+  return record;
 }
 
 async function remove(table, id) {
@@ -333,7 +468,8 @@ async function listByTenant(table, tenantId, franchiseId) {
   }
   const { data, error } = await query;
   if (error) { logError('list', table, error); return []; }
-  return data || [];
+  const rows = (data || []).map(enrichRecord);
+  return attachLineItemsIfNeeded(resolved, rows);
 }
 
 /**
@@ -477,13 +613,14 @@ async function getSuperAdminDashboard() {
  * Get all pending approvals (quotations + invoices submitted by franchises).
  */
 async function getPendingApprovals() {
+  if (!supabase) return { quotations: [], invoices: [], total: 0 };
   const [quotations, invoices] = await Promise.all([
     supabase.from('quotations')
-      .select('id, franchise_id, customer_name, customerName, system_size_kw, systemSizeKw, grand_total, grandTotal, submitted_at, approval_status')
+      .select('*')
       .eq('approval_status', 'Submitted')
       .order('submitted_at', { ascending: true }),
     supabase.from('invoices')
-      .select('id, franchise_id, customer_name, customerName, grand_total, grandTotal, submitted_at, approval_status')
+      .select('*')
       .eq('approval_status', 'Submitted')
       .order('submitted_at', { ascending: true }),
   ]);
@@ -493,15 +630,18 @@ async function getPendingApprovals() {
   const frMap = {};
   (allFranchises || []).forEach(f => { frMap[f.id] = f; });
 
-  const annotated = (data, type) => (data || []).map(item => ({
-    ...item,
-    type,
-    customer_name: item.customer_name || item.customerName,
-    grand_total: item.grand_total || item.grandTotal,
-    project_size: item.system_size_kw || item.systemSizeKw,
-    franchise_name: frMap[item.franchise_id]?.name || item.franchise_id,
-    franchise_code: frMap[item.franchise_id]?.franchise_code || '',
-  }));
+  const annotated = (data, type) => (data || []).map(item => {
+    const row = enrichRecord(item);
+    return {
+      ...row,
+      type,
+      customer_name: row.customer_name || row.customerName,
+      grand_total: row.grand_total || row.grandTotal,
+      project_size: row.system_size_kw || row.systemSizeKw,
+      franchise_name: frMap[row.franchise_id]?.name || row.franchise_id,
+      franchise_code: frMap[row.franchise_id]?.franchise_code || '',
+    };
+  });
 
   return {
     quotations: annotated(quotations.data, 'quotation'),

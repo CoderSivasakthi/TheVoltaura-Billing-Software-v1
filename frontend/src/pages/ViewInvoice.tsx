@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { CreditCard, Printer, Edit3, CheckCircle } from 'lucide-react'
+import { CreditCard, Printer, Edit3, CheckCircle, XCircle } from 'lucide-react'
 import { api, fmt, fmtDate, toast, displayName } from '../services/api'
 import { useSettings } from '../context/SettingsContext'
 import { useAuth } from '../context/AuthContext'
@@ -189,6 +189,28 @@ export default function ViewInvoice() {
         }
     }
 
+    const handleApprove = async () => {
+        try {
+            await api('POST', `/api/invoices/${encodeURIComponent(id || '')}/approve`);
+            toast('Invoice approved');
+            loadInvoice();
+        } catch (e: any) {
+            toast(e.message || 'Failed to approve invoice', 'error');
+        }
+    }
+
+    const handleReject = async () => {
+        const reason = window.prompt('Rejection reason');
+        if (!reason || !reason.trim()) return;
+        try {
+            await api('POST', `/api/invoices/${encodeURIComponent(id || '')}/reject`, { reason: reason.trim() });
+            toast('Invoice rejected');
+            loadInvoice();
+        } catch (e: any) {
+            toast(e.message || 'Failed to reject invoice', 'error');
+        }
+    }
+
     const items: any[] = inv.items || []
     
     // Prefer database subtotal, fallback to robust item calculation checking rate/price
@@ -289,6 +311,16 @@ export default function ViewInvoice() {
                     <button className="btn btn-warning btn-sm" onClick={handleSubmitApproval} style={{ color: '#d97706', borderColor: '#d97706', background: '#fffbeb' }}>
                         Submit for Approval
                     </button>
+                )}
+                {auth.isSuperAdmin() && inv.approval_status === 'Submitted' && (
+                    <>
+                        <button className="btn btn-success btn-sm" onClick={handleApprove}>
+                            <CheckCircle size={14} /> Approve
+                        </button>
+                        <button className="btn btn-secondary btn-sm" onClick={handleReject} style={{ color: '#dc2626', borderColor: '#fecaca', background: '#fef2f2' }}>
+                            <XCircle size={14} /> Reject
+                        </button>
+                    </>
                 )}
                 {inv.status !== 'Paid' && (
                     <button className="btn btn-secondary btn-sm" onClick={() => updatePaymentStatus('Paid')} style={{ color: '#10B981', borderColor: '#10B981', background: '#F0FDF4' }}>

@@ -18,6 +18,10 @@ yarn-error.log*
 # Local data storage
 data/
 
+# Frontend build
+frontend/dist/
+frontend/.vite/
+
 # Java / Spring Boot build artifacts
 spring-microservice/target/
 spring-microservice/.mvn/

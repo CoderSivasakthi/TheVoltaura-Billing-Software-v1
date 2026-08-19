@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Sun, Mail, Lock, Building2, Eye, EyeOff } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import { apiUrl } from '../services/api'
 import '../styles/login.css'
 
 export default function Login() {
@@ -24,21 +25,8 @@ export default function Login() {
         setShowError(false)
         setLoading(true)
 
-        // Demo super admin shortcut (admin / admin)
-        if ((username === 'admin' || username === 'admin@thevoltaura.com') && password === 'admin') {
-            const demoUser = { username: 'admin', role: 'super_admin', tenant_id: 'admin', franchise_id: null, franchise_name: null }
-            const demoPerms = Object.fromEntries(
-                ['customers','quotations','invoices','payments','orders','products','amc','reports','settings','franchises','approvals','branding']
-                    .map(r => [r, { view: true, create: true, edit: true, delete: true, approve: true }])
-            ) as any
-            login('demo-token-12345', demoUser, demoPerms)
-            setLoading(false)
-            navigate('/', { replace: true })
-            return
-        }
-
         try {
-            const r = await fetch('/api/auth/login', {
+            const r = await fetch(apiUrl('/api/auth/login'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, password, franchise_id: franchiseId || undefined })
@@ -62,12 +50,26 @@ export default function Login() {
                 }
                 login(d.token, userObj, d.permissions || {})
                 navigate('/', { replace: true })
-            } else {
-                setError(d.error || d.message || 'Invalid credentials')
-                setShowError(true)
+                setLoading(false)
+                return
             }
+
+            if (import.meta.env.DEV && (username === 'admin' || username === 'admin@thevoltaura.com') && password === 'admin') {
+                const demoUser = { username: 'admin', role: 'super_admin', tenant_id: 'admin', franchise_id: null, franchise_name: null }
+                const demoPerms = Object.fromEntries(
+                    ['customers','quotations','invoices','payments','orders','products','amc','reports','settings','franchises','approvals','branding']
+                        .map(r => [r, { view: true, create: true, edit: true, delete: true, approve: true }])
+                ) as any
+                login('demo-token-12345', demoUser, demoPerms)
+                navigate('/', { replace: true })
+                setLoading(false)
+                return
+            }
+
+            setError(d.error || d.message || 'Invalid credentials')
+            setShowError(true)
         } catch {
-            setError('Cannot connect to server. Try admin / admin for demo.')
+            setError('Cannot connect to the production API. Check that the backend is deployed and VITE_API_URL / PUBLIC_API_URL is set.')
             setShowError(true)
         }
         setLoading(false)

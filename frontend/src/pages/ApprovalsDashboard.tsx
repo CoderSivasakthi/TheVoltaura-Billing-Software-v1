@@ -59,18 +59,20 @@ export default function ApprovalsDashboard() {
     }
 
     const load = useCallback(async () => {
+        if (!isSuperAdmin()) return
         setLoading(true)
         try {
             const d = await api('GET', '/api/approvals/pending', undefined, true)
             setData(d)
         } catch {} finally { setLoading(false) }
-    }, [])
+    }, [isSuperAdmin])
 
     useEffect(() => { load() }, [load])
     useEffect(() => {
+        if (!isSuperAdmin()) return
         const iv = setInterval(load, 30000)
         return () => clearInterval(iv)
-    }, [load])
+    }, [load, isSuperAdmin])
 
     if (!isSuperAdmin()) return (
         <div style={{ padding: '40px', textAlign: 'center', color: '#ef4444' }}>Access denied. Super Admin only.</div>

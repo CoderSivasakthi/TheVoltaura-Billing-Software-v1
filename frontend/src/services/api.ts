@@ -38,6 +38,9 @@ export async function api(method: string, path: string, body?: unknown, silent: 
         const r = await fetch(apiUrl(path), opts);
         if (!r.ok) {
             const errBody = await r.json().catch(() => ({}));
+            if (r.status === 401 || (r.status === 403 && errBody?.error === 'Invalid token')) {
+                window.dispatchEvent(new Event('auth-expired'));
+            }
             throw new Error(errBody.error || errBody.message || `Request failed (${r.status})`);
         }
         if (r.status === 204) return null;

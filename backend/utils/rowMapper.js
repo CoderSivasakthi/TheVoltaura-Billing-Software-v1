@@ -68,6 +68,10 @@ function enrichRecord(row) {
   extra.rejection_reason = row.rejection_reason || row.rejectionReason;
   extra.franchise_id = row.franchise_id || row.franchiseId;
   extra.tenant_id = row.tenant_id || row.tenantId;
+  extra.read = row.read ?? row.is_read ?? false;
+  extra.desc = row.desc || row.description;
+  extra.title = row.title;
+  extra.global_settings = row.global_settings || extra.global_settings;
   return extra;
 }
 

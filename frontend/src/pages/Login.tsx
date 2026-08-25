@@ -31,7 +31,7 @@ export default function Login() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, password, franchise_id: franchiseId || undefined })
             })
-            const d = await r.json()
+            const d = await r.json().catch(() => ({} as any))
 
             if (r.status === 403 && d.error === 'Account suspended') {
                 setError('Your franchise account has been suspended. Please contact TheVoltaura Head Office.')
@@ -69,7 +69,7 @@ export default function Login() {
             setError(d.error || d.message || 'Invalid credentials')
             setShowError(true)
         } catch {
-            setError('Cannot connect to the production API. Check that the backend is deployed and VITE_API_URL / PUBLIC_API_URL is set.')
+            setError('Cannot reach the billing API. Start the backend with npm start (port 5001) and keep this page on http://localhost:3000.')
             setShowError(true)
         }
         setLoading(false)

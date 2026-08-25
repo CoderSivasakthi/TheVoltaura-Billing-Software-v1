@@ -1,0 +1,94 @@
+================================================================================
+                    THEVOLTAURA BILLING SOFTWARE - ARCHITECTURE
+================================================================================
+
+1. SYSTEM OVERVIEW
+--------------------------------------------------------------------------------
+TheVoltaura Billing Software is a multi-tier ERP and billing system designed for 
+solar franchise management. It uses a modern microservices-oriented architecture 
+orchestrated via Docker Compose.
+
+The system is broken down into four main local components (containers) and one 
+external managed cloud database.
+
+
+2. CORE COMPONENTS
+--------------------------------------------------------------------------------
+
+A. FRONTEND (React.js)
+   - Path: /frontend
+   - Technology: React, Vite, TypeScript
+   - Role: Provides the user interface for Super Admins and Franchise Admins.
+           Handles dashboards, quotation/invoice generation, customer management,
+           and approvals.
+   - Deployment: Served via Nginx (port 80).
+
+B. NODE.JS BACKEND (BFF / Main API)
+   - Path: /server.js (built via /node-backend/Dockerfile)
+   - Technology: Node.js, Express.js
+   - Role: Acts as the primary backend and Backend-For-Frontend (BFF).
+           Handles Authentication (JWT), Role-Based Access Control (RBAC), 
+           file uploads (Multer), and business logic for most entities 
+           (Quotations, Invoices, Customers).
+   - Port: 5001 (internal). Exposed to the outside through Nginx under /api/*
+
+C. SPRING BOOT MICROSERVICE (Java)
+   - Path: /spring-microservice
+   - Technology: Java 17, Spring Boot 3, Hibernate/JPA, HikariCP
+   - Role: Handles specialized backend tasks that require strong typing or 
+           heavy processing. Connects to PostgreSQL in production and falls back 
+           to an in-memory H2 database for local testing.
+   - Port: 8081 (internal). Exposed to the outside through Nginx under /spring/*
+
+D. NGINX (Reverse Proxy)
+   - Path: /nginx
+   - Technology: Nginx
+   - Role: The single entry point for the application. It routes incoming 
+           HTTP traffic to the correct internal container:
+           - `/`        -> React Frontend
+           - `/api/`    -> Node.js Backend
+           - `/spring/` -> Spring Boot Microservice
+   - Port: 80 (external).
+
+E. DATABASE & STORAGE (External - Supabase)
+   - Technology: PostgreSQL (Supabase), Supabase Storage
+   - Role: The single source of truth for all data.
+           - PostgreSQL: Stores users, tenants, quotations, invoices, approvals.
+           - Supabase Storage: 'erp-documents' bucket stores generated PDFs 
+             and uploaded files.
+   - Connection: Node.js connects via `@supabase/supabase-js`. Spring Boot 
+                 connects via JDBC URL.
+
+
+3. DATA FLOW & COMMUNICATION
+--------------------------------------------------------------------------------
+- User makes a request via Browser -> Nginx (Port 80)
+- Nginx serves static UI files from the Frontend container.
+- Frontend makes API calls (e.g., fetch('/api/quotations')) -> Nginx.
+- Nginx forwards `/api/*` requests to the Node.js container (Port 5001).
+- Node.js validates the JWT token and queries the external Supabase DB.
+- Node.js returns JSON to Frontend -> UI updates.
+- If Frontend requests a Java endpoint (e.g., `/spring/health`), Nginx forwards 
+  it to the Spring Boot container (Port 8081).
+
+
+4. CI/CD & DEPLOYMENT
+--------------------------------------------------------------------------------
+- GitHub Actions: `.github/workflows/docker.yml` automatically triggers on push.
+- Pipeline Steps: 
+  1. Clones repository.
+  2. Builds all Docker images via `docker compose build`.
+  3. Runs a smoke test using `docker compose up -d`.
+  4. Pushes images to Docker Hub (`thevoltaura-billing-software-*`).
+
+
+5. KEY FILE STRUCTURE
+--------------------------------------------------------------------------------
+/
+├── frontend/               # React UI Code
+├── node-backend/           # Dockerfile for Node.js API
+├── spring-microservice/    # Java Spring Boot application
+├── nginx/                  # Nginx configuration (nginx.conf)
+├── server.js               # Main Node.js API entry point
+├── docker-compose.yml      # Orchestrates all containers and networking
+└── .env                    # Environment variables (Supabase keys, JWT secret)

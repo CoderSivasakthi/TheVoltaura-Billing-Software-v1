@@ -4,17 +4,57 @@
 // ═══════════════════════════════════════════════════════════════════════
 'use strict';
 
+const dns = require('dns').promises;
 const { createClient } = require('@supabase/supabase-js');
 const { mapToDb, enrichRecord, extractUnknownColumn } = require('../utils/rowMapper');
 
-const SUPABASE_URL  = process.env.SUPABASE_URL;
-const SERVICE_KEY   = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_KEY;
+const SUPABASE_URL  = String(process.env.SUPABASE_URL || '').trim().replace(/\/$/, '');
+const SERVICE_KEY   = String(process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_KEY || '').trim();
 
 let supabase = null;
+let circuitOpen = false;
+
+function isAvailable() {
+  return Boolean(supabase) && !circuitOpen;
+}
+
+function markUnreachable(reason) {
+  if (circuitOpen) return;
+  circuitOpen = true;
+  const msg = reason && reason.message ? reason.message : String(reason || 'network error');
+  console.warn('[supabaseRepo] Cloud database is unreachable — switching to local JSON storage.');
+  console.warn('[supabaseRepo]', msg.replace(/https?:\/\/[^\s]+/g, '[url]'));
+}
+
 if (SUPABASE_URL && SERVICE_KEY) {
+  const fetchWithTimeout = (url, options = {}) => {
+    if (circuitOpen) {
+      return Promise.reject(new Error('Supabase circuit open'));
+    }
+    const ctrl = new AbortController();
+    const ms = 2500;
+    const timer = setTimeout(() => ctrl.abort(), ms);
+    if (options.signal) {
+      if (options.signal.aborted) ctrl.abort();
+      else options.signal.addEventListener('abort', () => ctrl.abort(), { once: true });
+    }
+    return fetch(url, { ...options, signal: ctrl.signal })
+      .catch((err) => {
+        markUnreachable(err);
+        throw err;
+      })
+      .finally(() => clearTimeout(timer));
+  };
   supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
     auth: { persistSession: false },
+    global: { fetch: fetchWithTimeout },
   });
+  try {
+    const host = new URL(SUPABASE_URL).hostname;
+    dns.lookup(host).catch((err) => markUnreachable(err));
+  } catch (e) {
+    markUnreachable(e);
+  }
 } else {
   console.warn('[supabaseRepo] SUPABASE_URL / key not set — database operations will fail until configured.');
 }
@@ -88,9 +128,61 @@ function logError(action, table, error, payload = null) {
 
 // Map logical entity names to actual Supabase table names
 const TABLE_MAP = {
-
+  settings: 'settings',
+  amc: 'amc',
 };
+
+const TABLE_ALIASES = {
+  settings: ['settings', 'company_settings'],
+  amc: ['amc', 'amc_contracts'],
+};
+
 function resolveTable(name) { return TABLE_MAP[name] || name; }
+
+function tableCandidates(name) {
+  const resolved = resolveTable(name);
+  const aliases = TABLE_ALIASES[name] || TABLE_ALIASES[resolved] || [];
+  return [...new Set([resolved, ...aliases])];
+}
+
+function isMissingTable(error) {
+  const msg = String(error?.message || error?.details || '');
+  const code = String(error?.code || '');
+  return code === '42P01' || code === 'PGRST205' || /could not find the table|does not exist|schema cache/i.test(msg);
+}
+
+function isNetworkError(error) {
+  const msg = String(error?.message || error?.details || error);
+  return /fetch failed|ENOTFOUND|AbortError|aborted|timeout|ECONN|network/i.test(msg);
+}
+
+function isMissingColumn(error) {
+  const msg = String(error?.message || error?.details || '');
+  return /column|order|created_at/i.test(msg) && /does not exist|could not find/i.test(msg);
+}
+
+function normalizeSettingsRows(table, rows) {
+  if (table !== 'company_settings') return rows;
+  return rows.map((row) => ({
+    ...row,
+    id: row.id || 'global',
+    global_settings: row.global_settings || {
+      orgName: row.company_name,
+      logo: row.logo_url,
+      website: row.website,
+      email: row.support_email,
+      phone: row.support_phone,
+    },
+  }));
+}
+
+async function queryTable(table, { orderCreatedAt = true } = {}) {
+  let query = supabase.from(table).select('*');
+  if (orderCreatedAt && table !== 'company_settings' && table !== 'settings') {
+    query = query.order('created_at', { ascending: false });
+  }
+  return query;
+}
 
 function parentIdColumn(table) {
   if (table === 'quotations') return 'quotation_id';
@@ -159,19 +251,36 @@ async function attachLineItemsIfNeeded(table, rows) {
 }
 
 async function list(table) {
-  if (!supabase) { logError('list', table, { message: 'Supabase client not configured' }); return null; }
-  const resolved = resolveTable(table);
-  let query = supabase.from(resolved).select('*');
-  // Only order by created_at if the table is expected to have it
-  if (resolved !== 'company_settings' && resolved !== 'settings') {
-    query = query.order('created_at', { ascending: false });
+  if (!isAvailable()) return null;
+  const candidates = tableCandidates(table);
+  let lastError = null;
+  for (const candidate of candidates) {
+    for (const orderCreatedAt of [true, false]) {
+      try {
+        const { data, error } = await queryTable(candidate, { orderCreatedAt });
+        if (error) {
+          lastError = error;
+          if (isNetworkError(error)) {
+            markUnreachable(error);
+            return null;
+          }
+          if (orderCreatedAt && isMissingColumn(error)) continue;
+          if (isMissingTable(error)) break;
+          continue;
+        }
+        const rows = normalizeSettingsRows(candidate, (data || []).map(enrichRecord));
+        return attachLineItemsIfNeeded(resolveTable(table), rows);
+      } catch (e) {
+        lastError = e;
+        if (isNetworkError(e) || /circuit open/i.test(String(e && e.message))) {
+          markUnreachable(e);
+          return null;
+        }
+      }
+    }
   }
-  const { data, error } = await query;
-  if (error) { 
-    logError('list', table, error); 
-    return null; 
-  }
-  return attachLineItemsIfNeeded(resolved, (data || []).map(enrichRecord));
+  if (lastError) logError('list', table, lastError);
+  return [];
 }
 
 async function mutateWithColumnFallback(table, row, mutator) {
@@ -216,7 +325,7 @@ async function mutateWithColumnFallback(table, row, mutator) {
 }
 
 async function create(table, payload) {
-  if (!supabase) { logError('create', table, { message: 'Supabase client not configured' }, payload); return null; }
+  if (!isAvailable()) return null;
   const resolved = resolveTable(table);
   const row = mapToDb(payload);
   const data = await mutateWithColumnFallback(resolved, row, (current) =>
@@ -236,15 +345,17 @@ async function create(table, payload) {
 }
 
 async function find(table, id) {
-  if (!supabase) { logError('read', table, { message: 'Supabase client not configured' }, { id }); return null; }
+  if (!isAvailable()) return null;
+  const resolved = resolveTable(table);
   const { data, error } = await supabase
-    .from(resolveTable(table))
+    .from(resolved)
     .select('*')
     .eq('id', id)
     .maybeSingle();
-  if (error && error.code !== 'PGRST116') { 
-    logError('read', table, error, { id }); 
-    return null; 
+  if (error && error.code !== 'PGRST116') {
+    if (isNetworkError(error)) markUnreachable(error);
+    logError('read', table, error, { id });
+    return null;
   }
   if (!data) return null;
   const record = enrichRecord(data);
@@ -257,7 +368,7 @@ async function find(table, id) {
 }
 
 async function update(table, id, updates) {
-  if (!supabase) { logError('update', table, { message: 'Supabase client not configured' }, { id, updates }); return null; }
+  if (!isAvailable()) return null;
   const resolved = resolveTable(table);
   const row = mapToDb(updates);
   delete row.id;
@@ -278,6 +389,7 @@ async function update(table, id, updates) {
 }
 
 async function remove(table, id) {
+  if (!isAvailable()) return null;
   const { data, error } = await supabase
     .from(resolveTable(table))
     .delete()
@@ -459,6 +571,7 @@ async function getInvoiceVersions(invoiceId) {
  * Super Admin passes tenant_id='admin' to get all, or specific franchise_id.
  */
 async function listByTenant(table, tenantId, franchiseId) {
+  if (!isAvailable()) return null;
   const resolved = resolveTable(table);
   let query = supabase.from(resolved).select('*').order('created_at', { ascending: false });
   if (franchiseId) {
@@ -613,7 +726,8 @@ async function getSuperAdminDashboard() {
  * Get all pending approvals (quotations + invoices submitted by franchises).
  */
 async function getPendingApprovals() {
-  if (!supabase) return { quotations: [], invoices: [], total: 0 };
+  if (!isAvailable()) return { quotations: [], invoices: [], total: 0 };
+  try {
   const [quotations, invoices] = await Promise.all([
     supabase.from('quotations')
       .select('*')
@@ -648,6 +762,10 @@ async function getPendingApprovals() {
     invoices:   annotated(invoices.data, 'invoice'),
     total:      (quotations.data?.length || 0) + (invoices.data?.length || 0),
   };
+  } catch (e) {
+    console.warn('[getPendingApprovals]', e.message);
+    return { quotations: [], invoices: [], total: 0 };
+  }
 }
 
 /**
@@ -701,7 +819,7 @@ async function upsertTenantSettings(franchiseId, updates, updatedBy) {
 
 module.exports = {
   // Generic CRUD (used by existing server.js)
-  list, create, find, update, remove, checkTables,
+  list, create, find, update, remove, checkTables, isAvailable,
   // Typed operations
   generateCustomerCode,
   createCustomer,

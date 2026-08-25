@@ -6113,3 +6113,13 @@ html.font-xl body {
         zoom: 1 !important;
     }
 }
+/* Hide number spinners */
+.no-spinners::-webkit-inner-spin-button,
+.no-spinners::-webkit-outer-spin-button {
+  -webkit-appearance: none !important;
+  margin: 0 !important;
+}
+.no-spinners {
+  -moz-appearance: textfield !important;
+}
+

@@ -15,6 +15,7 @@ export default function CreateQuotation() {
 
     const [customers, setCustomers] = useState<any[]>([])
     const [products, setProducts] = useState<any[]>([])
+    const INVENTORY_CATEGORIES = ['Solar Panels', 'Inverters', 'Batteries', 'Electricals', 'Mounting', 'Earthing', 'Services', 'Accessories']
 
     const { settings } = useSettings()
     const globalSettings = settings || {} as any
@@ -703,9 +704,9 @@ export default function CreateQuotation() {
                                     <th style={{ padding: '12px 8px', width: '32px' }}></th>
                                     <th style={{ padding: '12px 8px', width: '50px' }}>No.</th>
                                     <th style={{ padding: '12px 8px', minWidth: '350px' }}>Product & Description</th>
-                                    <th style={{ padding: '12px 8px', width: '80px' }}>Qty</th>
-                                    <th style={{ padding: '12px 8px', width: '120px' }}>Unit Price (₹)</th>
-                                    <th style={{ padding: '12px 8px', width: '80px' }}>GST %</th>
+                                    <th style={{ padding: '12px 8px', width: '120px' }}>Qty</th>
+                                    <th style={{ padding: '12px 8px', width: '160px' }}>Unit Price (₹)</th>
+                                    <th style={{ padding: '12px 8px', width: '90px' }}>GST %</th>
                                     <th style={{ padding: '12px 8px', width: '80px', textAlign: 'center' }}>Action</th>
                                 </tr>
                             </thead>
@@ -731,13 +732,28 @@ export default function CreateQuotation() {
                                         </td>
                                         <td style={{ padding: '12px 8px' }}>
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                <select
+                                                    style={{ ...s_input, fontSize: '12px', padding: '5px 10px', color: 'var(--g600)', backgroundColor: 'var(--g50)' }}
+                                                    value={item.category || ''}
+                                                    onChange={e => updateItem(idx, 'category', e.target.value)}
+                                                >
+                                                    <option value="">All Categories</option>
+                                                    {INVENTORY_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                                                </select>
                                                 <input 
-                                                    list="product-options"
+                                                    list={`product-options-${item.id}`}
                                                     style={{ ...s_input, fontWeight: 600, color: 'var(--g900)' }} 
                                                     value={item.productName} 
                                                     onChange={e => updateItem(idx, 'productName', e.target.value)} 
                                                     placeholder="Search or enter product name..." 
                                                 />
+                                                <datalist id={`product-options-${item.id}`}>
+                                                    {products
+                                                        .filter(p => !item.category || (p.category || '') === item.category)
+                                                        .map(p => (
+                                                            <option key={p.id} value={p.name} />
+                                                    ))}
+                                                </datalist>
                                                 <textarea 
                                                     style={{ ...s_input, height: '60px', resize: 'vertical', fontSize: '13px', lineHeight: '1.4' }} 
                                                     value={item.description || ''} 
@@ -754,12 +770,12 @@ export default function CreateQuotation() {
                                         </td>
                                         <td style={{ padding: '12px 8px', verticalAlign: 'top' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                <input type="number" style={{ ...s_input, textAlign: 'center', width: '60px' }} value={item.qty} onChange={e => updateItem(idx, 'qty', e.target.value)} min={1} />
+                                                <input type="number" className="no-spinners" style={{ ...s_input, padding: '8px', textAlign: 'center', width: '80px', minWidth: '60px' }} value={item.qty} onChange={e => updateItem(idx, 'qty', e.target.value)} min={1} onWheel={e => e.currentTarget.blur()} />
                                                 <span style={{ fontSize: '12px', color: 'var(--g500)' }}>{item.unit || 'Nos'}</span>
                                             </div>
                                         </td>
                                         <td style={{ padding: '12px 8px', verticalAlign: 'top' }}>
-                                            <input type="number" style={s_input} value={item.price} onChange={e => updateItem(idx, 'price', e.target.value)} />
+                                            <input type="number" className="no-spinners" style={{ ...s_input, padding: '8px', width: '100%', minWidth: '100px' }} value={item.price} onChange={e => updateItem(idx, 'price', e.target.value)} onWheel={e => e.currentTarget.blur()} />
                                         </td>
                                         <td style={{ padding: '12px 8px', verticalAlign: 'top' }}>
                                             <select style={s_input} value={item.gstRate} onChange={e => updateItem(idx, 'gstRate', e.target.value)}>
@@ -780,12 +796,6 @@ export default function CreateQuotation() {
                                 ))}
                             </tbody>
                         </table>
-                        
-                        <datalist id="product-options">
-                            {products.map(p => (
-                                <option key={p.id} value={p.name} />
-                            ))}
-                        </datalist>
 
                         <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-start' }}>
                             <button className="btn btn-secondary btn-sm" onClick={addItem}><Plus size={14} /> Add New Specification Row</button>

@@ -60,6 +60,15 @@ export default function Layout() {
         return () => clearInterval(iv)
     }, [isAdmin])
 
+    useEffect(() => {
+        const handleAuthExpired = () => {
+            auth.logout();
+            navigate('/login');
+        };
+        window.addEventListener('auth-expired', handleAuthExpired);
+        return () => window.removeEventListener('auth-expired', handleAuthExpired);
+    }, [auth, navigate]);
+
     const [suppTab, setSuppTab] = useState('faq')
     const [faqExpanded, setFaqExpanded] = useState(false)
     const [fontSize, setFontSize] = useState(localStorage.getItem('sf_fontSize') || 'md')

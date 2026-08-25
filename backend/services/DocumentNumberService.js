@@ -25,36 +25,34 @@ class DocumentNumberService {
     const gs = globalSettings.global_settings || {};
 
     if (type === 'invoice') {
-      if (gs.invoicePrefix !== undefined && gs.invoiceCounter !== undefined && gs.invoicePadding !== undefined) {
-        const counter = Number(gs.invoiceCounter);
-        const padding = Number(gs.invoicePadding);
-        const prefix = gs.invoicePrefix;
-        const nextId = `${prefix}${String(counter).padStart(padding, '0')}`;
-        
-        // Increment and persist the counter immediately
-        gs.invoiceCounter = counter + 1;
-        await updateEntity('settings', 'global', { global_settings: gs });
-        
-        return nextId;
-      } else {
-        throw new Error('Document numbering has not been configured. Please configure Invoice Prefix in Settings before creating documents.');
-      }
+      const prefix = gs.invoicePrefix !== undefined ? gs.invoicePrefix : 'INV-';
+      const counter = Number(gs.invoiceCounter !== undefined ? gs.invoiceCounter : 1);
+      const padding = Number(gs.invoicePadding !== undefined ? gs.invoicePadding : 6);
+      
+      const nextId = `${prefix}${String(counter).padStart(padding, '0')}`;
+      
+      // Increment and persist the counter immediately
+      gs.invoicePrefix = prefix;
+      gs.invoiceCounter = counter + 1;
+      gs.invoicePadding = padding;
+      await updateEntity('settings', 'global', { global_settings: gs });
+      
+      return nextId;
     } 
     else if (type === 'quotation') {
-      if (gs.quotationPrefix !== undefined && gs.quotationCounter !== undefined && gs.quotationPadding !== undefined) {
-        const counter = Number(gs.quotationCounter);
-        const padding = Number(gs.quotationPadding);
-        const prefix = gs.quotationPrefix;
-        const nextId = `${prefix}${String(counter).padStart(padding, '0')}`;
-        
-        // Increment and persist the counter immediately
-        gs.quotationCounter = counter + 1;
-        await updateEntity('settings', 'global', { global_settings: gs });
-        
-        return nextId;
-      } else {
-        throw new Error('Document numbering has not been configured. Please configure Quotation Prefix in Settings before creating documents.');
-      }
+      const prefix = gs.quotationPrefix !== undefined ? gs.quotationPrefix : 'QT-';
+      const counter = Number(gs.quotationCounter !== undefined ? gs.quotationCounter : 1);
+      const padding = Number(gs.quotationPadding !== undefined ? gs.quotationPadding : 6);
+      
+      const nextId = `${prefix}${String(counter).padStart(padding, '0')}`;
+      
+      // Increment and persist the counter immediately
+      gs.quotationPrefix = prefix;
+      gs.quotationCounter = counter + 1;
+      gs.quotationPadding = padding;
+      await updateEntity('settings', 'global', { global_settings: gs });
+      
+      return nextId;
     }
 
     throw new Error(`Unsupported document type: ${type}`);

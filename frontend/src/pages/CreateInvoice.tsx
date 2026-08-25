@@ -291,10 +291,10 @@ export default function CreateInvoice() {
                                                 <input style={{ ...s_input, textAlign: 'center', backgroundColor: 'var(--g50)', color: 'var(--g600)' }} type="text" value={it.hsnCode} readOnly title="Auto-mapped from Product/Settings" placeholder="HSN" />
                                             </td>
                                             <td style={{ padding: '12px' }}>
-                                                <input style={{ ...s_input, textAlign: 'center' }} type="number" min="1" value={it.qty} onChange={e => updateItem(i, 'qty', e.target.value)} />
+                                                <input className="no-spinners" style={{ ...s_input, textAlign: 'center' }} type="number" min="1" value={it.qty} onChange={e => updateItem(i, 'qty', e.target.value)} onWheel={e => e.currentTarget.blur()} />
                                             </td>
                                             <td style={{ padding: '12px' }}>
-                                                <input style={s_input} type="number" min="0" value={it.price} onChange={e => updateItem(i, 'price', e.target.value)} />
+                                                <input className="no-spinners" style={s_input} type="number" min="0" value={it.price} onChange={e => updateItem(i, 'price', e.target.value)} onWheel={e => e.currentTarget.blur()} />
                                             </td>
                                             <td style={{ padding: '12px' }}>
                                                 <select style={s_input} value={it.gstRate} onChange={e => updateItem(i, 'gstRate', e.target.value)}>

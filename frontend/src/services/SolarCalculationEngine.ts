@@ -11,6 +11,7 @@ export interface LineItem {
     description?: string;
     technicalSpecification?: string;
     unit?: string;
+    category?: string;
 }
 
 export interface CalculationResult {

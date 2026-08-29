@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - main
+    paths:
+      # Only rebuild when frontend source or workflow changes
+      - 'frontend/**'
+      - '.github/workflows/pages.yml'
   workflow_dispatch:
 
 permissions:
@@ -28,36 +32,62 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Install and build
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build frontend
         working-directory: frontend
         env:
           VITE_API_URL: ${{ secrets.PUBLIC_API_URL }}
           VITE_BASE_PATH: /${{ github.event.repository.name }}/
           VITE_ROUTER_MODE: hash
           PUBLIC_API_URL: ${{ secrets.PUBLIC_API_URL }}
-        run: |
-          npm ci
-          npm run build
-          cp dist/index.html dist/404.html
-          touch dist/.nojekyll
-          # Runtime API origin (GitHub Secret PUBLIC_API_URL). Empty is valid:
-          # the SPA then uses same-origin /api only when hosted with the backend.
-          printf "window.__API_BASE__ = %s;\n" "$(python3 -c 'import json,os; print(json.dumps(os.environ.get("PUBLIC_API_URL") or ""))')" > dist/config.js
+        run: npm run build
 
-      - name: Inject runtime API config
+      - name: Post-build setup
+        working-directory: frontend
+        env:
+          PUBLIC_API_URL: ${{ secrets.PUBLIC_API_URL }}
+        run: |
+          # SPA fallback: serve index.html for all 404 routes
+          cp dist/index.html dist/404.html
+          # Prevent Jekyll processing
+          touch dist/.nojekyll
+          # Runtime API config — reads the secret at build time and bakes it in
+          # If PUBLIC_API_URL secret is not set, API_BASE will be "" and the app
+          # will show a "no backend configured" warning on the login screen.
+          python3 -c '
+          import json, os
+          url = os.environ.get("PUBLIC_API_URL") or ""
+          print(f"window.__API_BASE__ = {json.dumps(url)};")
+          ' > dist/config.js
+
+      - name: Inject config.js into index.html (if not already present)
         working-directory: frontend
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          p = Path('dist/index.html')
-          html = p.read_text()
-          tag = '<script src="./config.js"></script>'
-          if tag not in html:
-              html = html.replace('<head>', '<head>\n  ' + tag, 1)
-              p.write_text(html)
+          for name in ('index.html', '404.html'):
+              p = Path(f'dist/{name}')
+              html = p.read_text()
+              tag = '<script src="./config.js"></script>'
+              if tag not in html:
+                  html = html.replace('<head>', '<head>\n  ' + tag, 1)
+                  p.write_text(html)
           PY
 
-      - uses: actions/upload-pages-artifact@v3
+      - name: Verify dist contents
+        working-directory: frontend
+        run: |
+          echo "=== dist/index.html asset references ==="
+          grep -E "script|stylesheet|config" dist/index.html
+          echo "=== dist/config.js ==="
+          cat dist/config.js
+          echo "=== dist/ file count ==="
+          find dist -type f | wc -l
+
+      - uses: actions/upload-pages-artifact@v4
         with:
           path: frontend/dist
 

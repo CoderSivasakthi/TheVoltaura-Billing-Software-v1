@@ -35,6 +35,10 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Write .env file
+        # Build a minimal .env so docker compose can start without any secrets.
+        # Each optional secret is only written when non-empty.
+        # The "|| true" suffix prevents bash -e from treating the
+        # [ -n "" ] exit-code-1 as a fatal error when secrets are unset.
         env:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -50,23 +54,26 @@ jobs:
             echo "PORT=5001"
             echo "REQUIRE_DATABASE=false"
             echo "SPRING_PROFILES_ACTIVE=docker"
-            [ -n "$JWT_SECRET" ] && echo "JWT_SECRET=$JWT_SECRET"
-            [ -n "$SUPABASE_URL" ] && echo "SUPABASE_URL=$SUPABASE_URL"
-            [ -n "$SUPABASE_KEY" ] && echo "SUPABASE_KEY=$SUPABASE_KEY"
-            [ -n "$SUPABASE_SERVICE_KEY" ] && echo "SUPABASE_SERVICE_KEY=$SUPABASE_SERVICE_KEY"
-            [ -n "$DATABASE_URL" ] && echo "DATABASE_URL=$DATABASE_URL"
-            [ -n "$SPRING_DATASOURCE_URL" ] && echo "SPRING_DATASOURCE_URL=$SPRING_DATASOURCE_URL"
-            [ -n "$SPRING_DATASOURCE_USERNAME" ] && echo "SPRING_DATASOURCE_USERNAME=$SPRING_DATASOURCE_USERNAME"
-            [ -n "$SPRING_DATASOURCE_PASSWORD" ] && echo "SPRING_DATASOURCE_PASSWORD=$SPRING_DATASOURCE_PASSWORD"
+            [ -n "$JWT_SECRET" ]                 && echo "JWT_SECRET=$JWT_SECRET"                                 || true
+            [ -n "$SUPABASE_URL" ]               && echo "SUPABASE_URL=$SUPABASE_URL"                             || true
+            [ -n "$SUPABASE_KEY" ]               && echo "SUPABASE_KEY=$SUPABASE_KEY"                             || true
+            [ -n "$SUPABASE_SERVICE_KEY" ]       && echo "SUPABASE_SERVICE_KEY=$SUPABASE_SERVICE_KEY"             || true
+            [ -n "$DATABASE_URL" ]               && echo "DATABASE_URL=$DATABASE_URL"                             || true
+            [ -n "$SPRING_DATASOURCE_URL" ]      && echo "SPRING_DATASOURCE_URL=$SPRING_DATASOURCE_URL"           || true
+            [ -n "$SPRING_DATASOURCE_USERNAME" ] && echo "SPRING_DATASOURCE_USERNAME=$SPRING_DATASOURCE_USERNAME" || true
+            [ -n "$SPRING_DATASOURCE_PASSWORD" ] && echo "SPRING_DATASOURCE_PASSWORD=$SPRING_DATASOURCE_PASSWORD" || true
           } > .env
 
       - name: Build all Docker images
         run: docker compose build
 
-      # Wait only on the billing path (frontend + Node + nginx). Spring is optional
-      # and must not fail Pages/deploy when datasource secrets are unset.
-      - name: Start services and wait for health
-        run: docker compose up -d --wait --wait-timeout 180 frontend node-backend nginx
+      # Start only the billing-critical path first (frontend + Node BFF).
+      # Use --no-deps so spring-service (which needs DB credentials) is not
+      # pulled in as a transitive dependency when starting nginx.
+      - name: Start billing services and wait for health
+        run: |
+          docker compose up -d --no-deps --wait --wait-timeout 180 frontend node-backend
+          docker compose up -d --no-deps --wait --wait-timeout 60 nginx
 
       - name: Verify health endpoints
         run: |

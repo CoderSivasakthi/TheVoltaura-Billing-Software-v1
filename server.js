@@ -2018,8 +2018,7 @@ app.put('/api/settings', requireAuth, async (req, res) => {
 app.get('/api/franchises', requireAuth, async (req, res) => {
   if (!req.tenant?.is_super_admin) return res.status(403).json({ error: 'Super Admin only' });
   try {
-    const { data, error } = await supa.rawClient.from('franchises').select('*').order('created_at', { ascending: false });
-    if (error) throw new Error(error.message);
+    const data = await listEntities('franchises');
     res.json(data || []);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -2028,7 +2027,35 @@ app.get('/api/franchises', requireAuth, async (req, res) => {
 app.post('/api/franchises', requireAuth, async (req, res) => {
   if (!req.tenant?.is_super_admin) return res.status(403).json({ error: 'Super Admin only' });
   try {
-    const fr = await supa.createFranchise(req.body, req.tenant.username);
+    let fr = null;
+    if (supabaseOnline()) {
+      try { fr = await supa.createFranchise(req.body, req.tenant.username); } catch (e) { console.warn('supa.createFranchise failed', e.message); }
+    }
+    if (!fr) {
+      const franchiseId = req.body.id || 'FR-' + Date.now();
+      const franchise = {
+        id:               franchiseId,
+        franchise_code:   franchiseId,
+        name:             req.body.name,
+        city:             req.body.city || null,
+        state:            req.body.state || null,
+        admin_name:       req.body.adminName || null,
+        admin_email:      req.body.adminEmail || null,
+        admin_phone:      req.body.adminPhone || null,
+        branch_address:   req.body.branchAddress || null,
+        status:           'Active',
+        created_by:       req.tenant?.username || 'super_admin',
+      };
+      fr = await createEntity('franchises', franchise);
+      
+      const settingsList = await readDataFile('settings.json');
+      settingsList.push({
+        id: franchiseId,
+        franchise_id: franchiseId,
+        branch_address: req.body.branchAddress || null,
+      });
+      await writeDataFile('settings.json', settingsList);
+    }
     if (!fr) return res.status(500).json({ error: 'Failed to create franchise' });
 
     // Create the franchise admin user account
@@ -2104,7 +2131,9 @@ app.post('/api/franchises/:id/reset-password', requireAuth, async (req, res) => 
 app.get('/api/franchises/:id/dashboard', requireAuth, async (req, res) => {
   if (!req.tenant?.is_super_admin) return res.status(403).json({ error: 'Super Admin only' });
   try {
-    const data = await supa.getFranchiseDashboard(req.params.id);
+    let data = null;
+    if (supabaseOnline()) { try { data = await supa.getFranchiseDashboard(req.params.id); } catch(e){} }
+    if (!data) data = { franchise_id: req.params.id, total_customers: 0, total_quotations: 0, total_invoices: 0, total_revenue: 0, outstanding: 0, pending_approvals: 0 };
     res.json(data);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -2113,7 +2142,9 @@ app.get('/api/franchises/:id/dashboard', requireAuth, async (req, res) => {
 app.get('/api/super-admin/dashboard', requireAuth, async (req, res) => {
   if (!req.tenant?.is_super_admin) return res.status(403).json({ error: 'Super Admin only' });
   try {
-    const data = await supa.getSuperAdminDashboard();
+    let data = null;
+    if (supabaseOnline()) { try { data = await supa.getSuperAdminDashboard(); } catch(e){} }
+    if (!data) data = { total_franchises: 0, active_franchises: 0, total_revenue: 0, mrr: 0, active_users: 0, recent_franchises: [] };
     res.json(data);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -2126,7 +2157,8 @@ app.get('/api/super-admin/dashboard', requireAuth, async (req, res) => {
 app.get('/api/approvals/pending', requireAuth, async (req, res) => {
   if (!req.tenant?.is_super_admin) return res.status(403).json({ error: 'Super Admin only' });
   try {
-    const data = await supa.getPendingApprovals();
+    let data = null;
+    if (supabaseOnline()) { try { data = await supa.getPendingApprovals(); } catch(e){} }
     res.json(data || { quotations: [], invoices: [], total: 0 });
   } catch (e) {
     console.warn('[approvals]', e.message);
@@ -2146,7 +2178,7 @@ app.post('/api/quotations/:id/submit', requireAuth, async (req, res) => {
     if (q.approval_status === 'Approved') return res.status(400).json({ error: 'Quotation is already approved' });
     const old = q.approval_status;
     const upd = await updateEntity('quotations', req.params.id, { approval_status: 'Submitted', submitted_at: new Date().toISOString() });
-    await supa.writeApprovalLog({ entityType: 'quotation', entityId: req.params.id, franchiseId: q.franchise_id, tenantId: q.tenant_id, action: 'submitted', performedBy: req.tenant.username, performedRole: req.tenant.role, oldStatus: old, newStatus: 'Submitted', ipAddress: req.ip });
+    try { await supa.writeApprovalLog({ entityType: 'quotation', entityId: req.params.id, franchiseId: q.franchise_id, tenantId: q.tenant_id, action: 'submitted', performedBy: req.tenant.username, performedRole: req.tenant.role, oldStatus: old, newStatus: 'Submitted', ipAddress: req.ip }); } catch(e) {}
     // Notify Super Admin
     await createEntity('notifications', { title: 'Quotation Submitted for Approval', desc: `Franchise submitted quotation ${req.params.id} for approval`, type: 'info', link: `/approvals`, read: false, target_role: 'super_admin', createdAt: new Date().toISOString() });
     res.json(upd);
@@ -2161,7 +2193,7 @@ app.post('/api/quotations/:id/approve', requireAuth, async (req, res) => {
     if (!q) return res.status(404).json({ error: 'Not found' });
     const old = q.approval_status;
     const upd = await updateEntity('quotations', req.params.id, { approval_status: 'Approved', approved_by: req.tenant.username, approved_at: new Date().toISOString(), rejection_reason: null });
-    await supa.writeApprovalLog({ entityType: 'quotation', entityId: req.params.id, franchiseId: q.franchise_id, tenantId: q.tenant_id, action: 'approved', performedBy: req.tenant.username, performedRole: req.tenant.role, oldStatus: old, newStatus: 'Approved', ipAddress: req.ip });
+    try { await supa.writeApprovalLog({ entityType: 'quotation', entityId: req.params.id, franchiseId: q.franchise_id, tenantId: q.tenant_id, action: 'approved', performedBy: req.tenant.username, performedRole: req.tenant.role, oldStatus: old, newStatus: 'Approved', ipAddress: req.ip }); } catch(e) {}
     await createEntity('notifications', { title: 'Quotation Approved', desc: `Your quotation ${req.params.id} has been approved by Head Office`, type: 'success', link: `/view-quotation/${req.params.id}`, read: false, tenant_id: q.tenant_id, franchise_id: q.franchise_id, createdAt: new Date().toISOString() });
     try { broadcastEvent({ type: 'quotation.approved', data: { id: req.params.id } }); } catch(e) {}
     res.json(upd);
@@ -2178,7 +2210,7 @@ app.post('/api/quotations/:id/reject', requireAuth, async (req, res) => {
     if (!q) return res.status(404).json({ error: 'Not found' });
     const old = q.approval_status;
     const upd = await updateEntity('quotations', req.params.id, { approval_status: 'Rejected', approved_by: req.tenant.username, approved_at: new Date().toISOString(), rejection_reason: reason });
-    await supa.writeApprovalLog({ entityType: 'quotation', entityId: req.params.id, franchiseId: q.franchise_id, tenantId: q.tenant_id, action: 'rejected', performedBy: req.tenant.username, performedRole: req.tenant.role, comment: reason, oldStatus: old, newStatus: 'Rejected', ipAddress: req.ip });
+    try { await supa.writeApprovalLog({ entityType: 'quotation', entityId: req.params.id, franchiseId: q.franchise_id, tenantId: q.tenant_id, action: 'rejected', performedBy: req.tenant.username, performedRole: req.tenant.role, comment: reason, oldStatus: old, newStatus: 'Rejected', ipAddress: req.ip }); } catch(e) {}
     await createEntity('notifications', { title: 'Quotation Rejected', desc: `Your quotation ${req.params.id} was rejected. Reason: ${reason}`, type: 'danger', link: `/view-quotation/${req.params.id}`, read: false, tenant_id: q.tenant_id, franchise_id: q.franchise_id, createdAt: new Date().toISOString() });
     try { broadcastEvent({ type: 'quotation.rejected', data: { id: req.params.id, reason } }); } catch(e) {}
     res.json(upd);
@@ -2194,7 +2226,7 @@ app.post('/api/quotations/:id/request-changes', requireAuth, async (req, res) =>
     if (!q) return res.status(404).json({ error: 'Not found' });
     const old = q.approval_status;
     const upd = await updateEntity('quotations', req.params.id, { approval_status: 'Revision Requested', rejection_reason: comment || '' });
-    await supa.writeApprovalLog({ entityType: 'quotation', entityId: req.params.id, franchiseId: q.franchise_id, tenantId: q.tenant_id, action: 'revision_requested', performedBy: req.tenant.username, performedRole: req.tenant.role, comment, oldStatus: old, newStatus: 'Revision Requested', ipAddress: req.ip });
+    try { await supa.writeApprovalLog({ entityType: 'quotation', entityId: req.params.id, franchiseId: q.franchise_id, tenantId: q.tenant_id, action: 'revision_requested', performedBy: req.tenant.username, performedRole: req.tenant.role, comment, oldStatus: old, newStatus: 'Revision Requested', ipAddress: req.ip }); } catch(e) {}
     await createEntity('notifications', { title: 'Quotation Revision Requested', desc: `Head Office requested changes on quotation ${req.params.id}: ${comment || ''}`, type: 'warning', link: `/view-quotation/${req.params.id}`, read: false, tenant_id: q.tenant_id, franchise_id: q.franchise_id, createdAt: new Date().toISOString() });
     res.json(upd);
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -2211,7 +2243,7 @@ app.post('/api/invoices/:id/submit', requireAuth, async (req, res) => {
     if (inv.approval_status === 'Approved') return res.status(400).json({ error: 'Already approved' });
     const old = inv.approval_status;
     const upd = await updateEntity('invoices', req.params.id, { approval_status: 'Submitted', submitted_at: new Date().toISOString() });
-    await supa.writeApprovalLog({ entityType: 'invoice', entityId: req.params.id, franchiseId: inv.franchise_id, tenantId: inv.tenant_id, action: 'submitted', performedBy: req.tenant.username, performedRole: req.tenant.role, oldStatus: old, newStatus: 'Submitted', ipAddress: req.ip });
+    try { await supa.writeApprovalLog({ entityType: 'invoice', entityId: req.params.id, franchiseId: inv.franchise_id, tenantId: inv.tenant_id, action: 'submitted', performedBy: req.tenant.username, performedRole: req.tenant.role, oldStatus: old, newStatus: 'Submitted', ipAddress: req.ip }); } catch(e) {}
     await createEntity('notifications', { title: 'Invoice Submitted for Approval', desc: `Franchise submitted invoice ${req.params.id} for approval`, type: 'info', link: `/approvals`, read: false, target_role: 'super_admin', createdAt: new Date().toISOString() });
     res.json(upd);
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -2225,7 +2257,7 @@ app.post('/api/invoices/:id/approve', requireAuth, async (req, res) => {
     if (!inv) return res.status(404).json({ error: 'Not found' });
     const old = inv.approval_status;
     const upd = await updateEntity('invoices', req.params.id, { approval_status: 'Approved', approved_by: req.tenant.username, approved_at: new Date().toISOString() });
-    await supa.writeApprovalLog({ entityType: 'invoice', entityId: req.params.id, franchiseId: inv.franchise_id, tenantId: inv.tenant_id, action: 'approved', performedBy: req.tenant.username, performedRole: req.tenant.role, oldStatus: old, newStatus: 'Approved', ipAddress: req.ip });
+    try { await supa.writeApprovalLog({ entityType: 'invoice', entityId: req.params.id, franchiseId: inv.franchise_id, tenantId: inv.tenant_id, action: 'approved', performedBy: req.tenant.username, performedRole: req.tenant.role, oldStatus: old, newStatus: 'Approved', ipAddress: req.ip }); } catch(e) {}
     await createEntity('notifications', { title: 'Invoice Approved', desc: `Your invoice ${req.params.id} has been approved by Head Office`, type: 'success', link: `/invoices/${req.params.id}`, read: false, tenant_id: inv.tenant_id, franchise_id: inv.franchise_id, createdAt: new Date().toISOString() });
     try { broadcastEvent({ type: 'invoice.approved', data: { id: req.params.id } }); } catch(e) {}
     res.json(upd);
@@ -2242,7 +2274,7 @@ app.post('/api/invoices/:id/reject', requireAuth, async (req, res) => {
     if (!inv) return res.status(404).json({ error: 'Not found' });
     const old = inv.approval_status;
     const upd = await updateEntity('invoices', req.params.id, { approval_status: 'Rejected', approved_by: req.tenant.username, approved_at: new Date().toISOString(), rejection_reason: reason });
-    await supa.writeApprovalLog({ entityType: 'invoice', entityId: req.params.id, franchiseId: inv.franchise_id, tenantId: inv.tenant_id, action: 'rejected', performedBy: req.tenant.username, performedRole: req.tenant.role, comment: reason, oldStatus: old, newStatus: 'Rejected', ipAddress: req.ip });
+    try { await supa.writeApprovalLog({ entityType: 'invoice', entityId: req.params.id, franchiseId: inv.franchise_id, tenantId: inv.tenant_id, action: 'rejected', performedBy: req.tenant.username, performedRole: req.tenant.role, comment: reason, oldStatus: old, newStatus: 'Rejected', ipAddress: req.ip }); } catch(e) {}
     await createEntity('notifications', { title: 'Invoice Rejected', desc: `Your invoice ${req.params.id} was rejected. Reason: ${reason}`, type: 'danger', link: `/invoices/${req.params.id}`, read: false, tenant_id: inv.tenant_id, franchise_id: inv.franchise_id, createdAt: new Date().toISOString() });
     res.json(upd);
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -2253,8 +2285,13 @@ app.post('/api/invoices/:id/reject', requireAuth, async (req, res) => {
 app.get('/api/tenant/settings', requireAuth, async (req, res) => {
   try {
     if (req.tenant?.is_super_admin) return res.json({});
-    const settings = await supa.getTenantSettings(req.tenant.franchise_id);
-    res.json(settings || {});
+    let settings = null;
+    if (supabaseOnline()) { try { settings = await supa.getTenantSettings(req.tenant.franchise_id); } catch(e){} }
+    if (!settings) {
+      const allSettings = await listEntities('settings');
+      settings = allSettings.find(s => s.franchise_id === req.tenant.franchise_id) || {};
+    }
+    res.json(settings);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -2264,7 +2301,11 @@ app.put('/api/tenant/settings', requireAuth, async (req, res) => {
   try {
     const allowed = ['branch_address', 'local_office_address', 'contact_number', 'email', 'working_hours'];
     // Only allow bank fields if franchise has bank_account_permitted
-    const { data: fr } = await supa.rawClient.from('franchises').select('bank_account_permitted').eq('id', req.tenant.franchise_id).single();
+    let fr = null;
+    try {
+      const franchises = await listEntities('franchises');
+      fr = franchises.find(f => f.id === req.tenant.franchise_id);
+    } catch(e) {}
     if (fr?.bank_account_permitted) {
       allowed.push('bank_account_name', 'bank_account_number', 'bank_ifsc', 'bank_name');
     }

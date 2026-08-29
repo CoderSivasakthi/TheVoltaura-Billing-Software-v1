@@ -65,6 +65,7 @@ export default function CreateQuotation() {
         }))
     })
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
+    const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
 
     // Form State - Calculation options (Section 4)
     const [discount, setDiscount] = useState(0)
@@ -323,7 +324,14 @@ export default function CreateQuotation() {
 
     const updateItem = (i: number, field: string, val: any) => {
         const newItems = [...items]
-        if (field === 'productId') {
+        if (field === 'category') {
+            newItems[i].category = val;
+            newItems[i].productName = '';
+            newItems[i].productId = '';
+            newItems[i].price = 0;
+            newItems[i].description = '';
+            newItems[i].technicalSpecification = '';
+        } else if (field === 'productId') {
             const prod = products.find(p => p.id === val)
             if (prod) {
                 let hsnCode = prod.hsnCode || prod.hsn || ''
@@ -740,20 +748,41 @@ export default function CreateQuotation() {
                                                     <option value="">All Categories</option>
                                                     {INVENTORY_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                                                 </select>
-                                                <input 
-                                                    list={`product-options-${item.id}`}
-                                                    style={{ ...s_input, fontWeight: 600, color: 'var(--g900)' }} 
-                                                    value={item.productName} 
-                                                    onChange={e => updateItem(idx, 'productName', e.target.value)} 
-                                                    placeholder="Search or enter product name..." 
-                                                />
-                                                <datalist id={`product-options-${item.id}`}>
-                                                    {products
-                                                        .filter(p => !item.category || (p.category || '') === item.category)
-                                                        .map(p => (
-                                                            <option key={p.id} value={p.name} />
-                                                    ))}
-                                                </datalist>
+                                                <div style={{ position: 'relative' }}>
+                                                    <input 
+                                                        style={{ ...s_input, fontWeight: 600, color: 'var(--g900)', width: '100%' }} 
+                                                        value={item.productName} 
+                                                        onChange={e => updateItem(idx, 'productName', e.target.value)} 
+                                                        placeholder="Search or enter product name..." 
+                                                        onFocus={() => setActiveDropdown(item.id || null)}
+                                                        onBlur={() => setActiveDropdown(null)}
+                                                    />
+                                                    {activeDropdown === item.id && (
+                                                        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, backgroundColor: '#fff', border: '1px solid var(--g200)', borderRadius: '6px', maxHeight: '250px', overflowY: 'auto', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', marginTop: '4px' }}>
+                                                            {products
+                                                                .filter(p => (!item.category || (p.category || '') === item.category) && (p.name || '').toLowerCase().includes((item.productName || '').toLowerCase()))
+                                                                .map(p => (
+                                                                    <div 
+                                                                        key={p.id} 
+                                                                        style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid var(--g100)', fontSize: '13px', transition: 'background-color 0.1s' }}
+                                                                        onMouseDown={(e) => e.preventDefault()}
+                                                                        onClick={() => {
+                                                                            updateItem(idx, 'productName', p.name);
+                                                                            setActiveDropdown(null);
+                                                                        }}
+                                                                        onMouseEnter={e => e.currentTarget.style.backgroundColor = 'var(--g50)'}
+                                                                        onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                                                                    >
+                                                                        <div style={{ fontWeight: 600, color: 'var(--g900)' }}>{p.name}</div>
+                                                                        {p.category && <div style={{ fontSize: '11px', color: 'var(--g500)', marginTop: '2px' }}>{p.category}</div>}
+                                                                    </div>
+                                                            ))}
+                                                            {products.filter(p => (!item.category || (p.category || '') === item.category) && (p.name || '').toLowerCase().includes((item.productName || '').toLowerCase())).length === 0 && (
+                                                                <div style={{ padding: '8px 12px', fontSize: '13px', color: 'var(--g500)', textAlign: 'center' }}>No matching products found</div>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
                                                 <textarea 
                                                     style={{ ...s_input, height: '60px', resize: 'vertical', fontSize: '13px', lineHeight: '1.4' }} 
                                                     value={item.description || ''} 

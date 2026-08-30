@@ -1,9 +1,16 @@
 require('dotenv').config();
-const { createClient } = require('@supabase/supabase-js');
-const supa = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+const supa = require('./backend/repos/supabaseRepo');
 
 async function run() {
-  const { data: users, error } = await supa.from('users').select('*');
-  console.log('Users:', users, error);
+  console.log('Testing getUsers from Supabase...');
+  const isAvailable = supa.isAvailable();
+  if (!isAvailable) {
+    console.log('Supabase not available.');
+    return;
+  }
+  const users = await supa.list('users');
+  console.log('Users length:', users ? users.length : 'null');
+  console.log('Users:', users);
 }
-run();
+
+run().catch(console.error);

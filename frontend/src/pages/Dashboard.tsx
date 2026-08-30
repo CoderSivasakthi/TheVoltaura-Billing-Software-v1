@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { TrendingUp, Clock, Wrench, AlertTriangle, RefreshCw, FilePlus, UserPlus, Download, Box } from 'lucide-react'
+import { TrendingUp, Clock, Wrench, AlertTriangle, RefreshCw, FilePlus, UserPlus, Download, Box, Award } from 'lucide-react'
 import { api, fmt, fmtDate, statusTag, displayName } from '../services/api'
 import { Chart, registerables } from 'chart.js'
 import { useAuth } from '../context/AuthContext'
@@ -18,6 +18,9 @@ function FranchiseDashboard() {
     const [kpi, setKpi] = useState({ revenue: '₹0', pending: '₹0', amc: '0', expiringAmc: '0', amcRevenue: '₹0', lowStock: '0' })
     const [recentInvoices, setRecentInvoices] = useState<any[]>([])
     const [lastUpdated, setLastUpdated] = useState('')
+    const [franchiseComm, setFranchiseComm] = useState({
+        leadCount: 0, leadPayment: '₹0', clientCount: 0, clientComm: '₹0', totalEarnings: '₹0'
+    })
 
     const [saasMetrics, setSaasMetrics] = useState({
         netRev: 'Rs.0.00', netRevYoY: '', recTotal: 'Rs.0.00', recCurrent: 'Rs.0.00', recOverdue: 'Rs.0.00',
@@ -53,12 +56,13 @@ function FranchiseDashboard() {
 
     const initDashboard = useCallback(async (silent = false) => {
         try {
-            const [invoices, products, amcList, quotations, orders] = await Promise.all([
+            const [invoices, products, amcList, quotations, orders, customers] = await Promise.all([
                 api('GET', '/api/invoices', undefined, silent).catch(() => []),
                 api('GET', '/api/products', undefined, silent).catch(() => []),
                 api('GET', '/api/amc', undefined, silent).catch(() => []),
                 api('GET', '/api/quotations', undefined, silent).catch(() => []),
-                api('GET', '/api/orders', undefined, silent).catch(() => [])
+                api('GET', '/api/orders', undefined, silent).catch(() => []),
+                api('GET', '/api/customers', undefined, silent).catch(() => [])
             ])
             // KPI calculations
             const totalRev = (invoices || []).filter((i: any) => (i.status || '').toLowerCase() === 'paid')
@@ -100,6 +104,35 @@ function FranchiseDashboard() {
             const todaysInstalls = (orders || []).filter((o: any) => o.expectedInstallationDate === todayStr).length;
 
             setPriorityOrdersSummary({ high: highPriority, normal: normalPriority, pendingInstalls, confirmedOrders, todaysInstalls });
+
+            // Franchise Payments & Commission
+            const cList = customers || [];
+            const qList = quotations || [];
+            const leadCount = cList.filter((c: any) => c.status === 'Lead').length;
+            const leadPayment = leadCount * 200;
+            
+            let clientCount = 0;
+            let clientComm = 0;
+            const clients = cList.filter((c: any) => c.status !== 'Lead');
+            clients.forEach((client: any) => {
+                clientCount++;
+                const clientQuotes = qList.filter((q: any) => q.customer_id === client.id || q.customerId === client.id || q.customerCode === client.customerCode || (q.customer && q.customer.id === client.id));
+                let totalKw = 0;
+                if (clientQuotes.length > 0) {
+                     totalKw = clientQuotes.reduce((sum: number, q: any) => sum + (parseFloat(q.systemSizeKw) || parseFloat(q.system_size_kw) || 0), 0);
+                }
+                if (totalKw >= 1) {
+                    clientComm += Math.floor(totalKw) * 2000;
+                }
+            });
+            
+            setFranchiseComm({
+                leadCount,
+                leadPayment: fmt(leadPayment),
+                clientCount,
+                clientComm: fmt(clientComm),
+                totalEarnings: fmt(leadPayment + clientComm)
+            });
 
             // Recent invoices (last 5)
             const sorted = [...(invoices || [])].sort((a: any, b: any) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime())
@@ -490,6 +523,22 @@ function FranchiseDashboard() {
                     <div className="kpi-top"><div className="kpi-label">AMC Revenue</div><div className="kpi-icon ki-green"><TrendingUp size={20} color="var(--green)" /></div></div>
                     <div className="kpi-val">{kpi.amcRevenue}</div>
                     <div className="kpi-delta"><span className="pct up">Stable</span><span className="desc">active values</span></div>
+                </div>
+                <div className="kpi-card">
+                    <div className="kpi-top"><div className="kpi-label" style={{fontWeight: 600, color: 'var(--g800)'}}>Franchise Payments & Commission</div><div className="kpi-icon ki-purple"><Award size={20} color="var(--purple, #8b5cf6)" /></div></div>
+                    <div style={{fontSize: '13px', display: 'flex', justifyContent: 'space-between', marginTop: '4px'}}>
+                        <span style={{color: 'var(--g500)'}}>Leads ({franchiseComm.leadCount})</span>
+                        <span style={{fontWeight: 600, color: 'var(--g800)'}}>{franchiseComm.leadPayment}</span>
+                    </div>
+                    <div style={{fontSize: '13px', display: 'flex', justifyContent: 'space-between', marginTop: '4px'}}>
+                        <span style={{color: 'var(--g500)'}}>Clients ({franchiseComm.clientCount})</span>
+                        <span style={{fontWeight: 600, color: 'var(--g800)'}}>{franchiseComm.clientComm}</span>
+                    </div>
+                    <hr style={{border: 'none', borderTop: '1px solid var(--g200)', margin: '8px 0'}} />
+                    <div style={{fontSize: '13px', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                        <span style={{color: 'var(--g500)'}}>Total Earnings</span>
+                        <span style={{fontWeight: 700, fontSize: '16px', color: 'var(--g900)'}}>{franchiseComm.totalEarnings}</span>
+                    </div>
                 </div>
             </div>
 

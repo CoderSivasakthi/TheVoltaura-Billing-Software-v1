@@ -598,15 +598,16 @@ async function initDashboard() {
     _donutChart = null;
 
     try {
-        const [rpt, custs, invs, amcData, prods] = await Promise.allSettled([
+        const [rpt, custs, invs, amcData, prods, quotesData] = await Promise.allSettled([
             api('GET', '/api/reports/summary'), api('GET', '/api/customers'),
-            api('GET', '/api/invoices'), api('GET', '/api/amc'), api('GET', '/api/products')
+            api('GET', '/api/invoices'), api('GET', '/api/amc'), api('GET', '/api/products'), api('GET', '/api/quotations')
         ]);
         const r = rpt.value || {};
         const cList = custs.value ? (Array.isArray(custs.value) ? custs.value : custs.value.value || []) : [];
         const iList = invs.value ? (Array.isArray(invs.value) ? invs.value : invs.value.value || []) : [];
         const aList = amcData.value ? (Array.isArray(amcData.value) ? amcData.value : amcData.value.value || []) : [];
         const pList = prods.value ? (Array.isArray(prods.value) ? prods.value : prods.value.value || []) : [];
+        const qList = quotesData.value ? (Array.isArray(quotesData.value) ? quotesData.value : quotesData.value.value || []) : [];
         const total = iList.reduce((s, i) => s + (i.total || 0), 0);
         const pending = iList.filter(i => i.status !== 'Paid').reduce((s, i) => s + (i.total || 0), 0);
         const lowStock = pList.filter(p => (p.stock || 0) < 10).length;
@@ -620,6 +621,32 @@ async function initDashboard() {
             if (el) el.style.color = 'var(--green)';
             setText('kpiLowStockAlert', 'All good ✓');
         }
+
+        // Franchise Payments & Commission
+        const leadCount = cList.filter(c => c.status === 'Lead').length;
+        const leadPayment = leadCount * 200;
+        
+        let clientCount = 0;
+        let clientComm = 0;
+        
+        const clients = cList.filter(c => c.status !== 'Lead');
+        clients.forEach(client => {
+            clientCount++;
+            const clientQuotes = qList.filter(q => q.customer_id === client.id || q.customerCode === client.customerCode || (q.customer && q.customer.id === client.id));
+            let totalKw = 0;
+            if (clientQuotes.length > 0) {
+                 totalKw = clientQuotes.reduce((sum, q) => sum + (parseFloat(q.system_size_kw || q.systemSizeKw) || 0), 0);
+            }
+            if (totalKw >= 1) {
+                clientComm += Math.floor(totalKw) * 2000;
+            }
+        });
+        
+        setText('franchiseLeadCount', leadCount);
+        setText('franchiseLeadPayment', fmt(leadPayment));
+        setText('franchiseClientCount', clientCount);
+        setText('franchiseClientComm', fmt(clientComm));
+        setText('franchiseTotalEarnings', fmt(leadPayment + clientComm));
 
         // Recent invoices table
         const dash = $id('dashRecentInvoices');

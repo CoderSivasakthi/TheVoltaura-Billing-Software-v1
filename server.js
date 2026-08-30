@@ -671,6 +671,9 @@ function seedLocalDataIfNeeded() {
 seedLocalDataIfNeeded();
 
 async function readDataFile(fileName) {
+  if (process.env.NODE_ENV === 'production' && supabaseOnline()) {
+    throw new Error(`Database operation failed. Fallback to local JSON is disabled in production for ${fileName}.`);
+  }
   try {
     ensureDataDir();
     const filePath = path.join(DATA_DIR, fileName);
@@ -685,6 +688,9 @@ async function readDataFile(fileName) {
 }
 
 async function writeDataFile(fileName, data) {
+  if (process.env.NODE_ENV === 'production' && supabaseOnline()) {
+    throw new Error(`Database operation failed. Fallback to local JSON is disabled in production for ${fileName}.`);
+  }
   ensureDataDir();
   const filePath = path.join(DATA_DIR, fileName);
   await fs.promises.writeFile(filePath, JSON.stringify(data, null, 2), 'utf8');

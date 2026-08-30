@@ -12,27 +12,20 @@ const SUPABASE_URL  = String(process.env.SUPABASE_URL || '').trim().replace(/\/$
 const SERVICE_KEY   = String(process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_KEY || '').trim();
 
 let supabase = null;
-let circuitOpen = false;
 
 function isAvailable() {
-  return Boolean(supabase) && !circuitOpen;
+  return Boolean(supabase);
 }
 
 function markUnreachable(reason) {
-  if (circuitOpen) return;
-  circuitOpen = true;
   const msg = reason && reason.message ? reason.message : String(reason || 'network error');
-  console.warn('[supabaseRepo] Cloud database is unreachable — switching to local JSON storage.');
-  console.warn('[supabaseRepo]', msg.replace(/https?:\/\/[^\s]+/g, '[url]'));
+  console.warn('[supabaseRepo] Transient Supabase error:', msg.replace(/https?:\/\/[^\s]+/g, '[url]'));
 }
 
 if (SUPABASE_URL && SERVICE_KEY) {
   const fetchWithTimeout = (url, options = {}) => {
-    if (circuitOpen) {
-      return Promise.reject(new Error('Supabase circuit open'));
-    }
     const ctrl = new AbortController();
-    const ms = 2500;
+    const ms = 15000;
     const timer = setTimeout(() => ctrl.abort(), ms);
     if (options.signal) {
       if (options.signal.aborted) ctrl.abort();
@@ -49,12 +42,6 @@ if (SUPABASE_URL && SERVICE_KEY) {
     auth: { persistSession: false },
     global: { fetch: fetchWithTimeout },
   });
-  try {
-    const host = new URL(SUPABASE_URL).hostname;
-    dns.lookup(host).catch((err) => markUnreachable(err));
-  } catch (e) {
-    markUnreachable(e);
-  }
 } else {
   console.warn('[supabaseRepo] SUPABASE_URL / key not set — database operations will fail until configured.');
 }

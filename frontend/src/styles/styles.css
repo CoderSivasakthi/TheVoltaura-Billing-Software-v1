@@ -5925,6 +5925,21 @@ button, a, [role="button"],
     outline: none;
 }
 
+/* ── PAYMENT TERMS CONTENT ───────────────────────────────────── */
+.payment-terms-content ul,
+.payment-terms-content ol {
+    margin: 0;
+    padding-left: 20px; /* Provides consistent spacing for bullets */
+}
+.payment-terms-content li {
+    margin-bottom: 6px;
+    word-break: break-word; /* Prevents long text from overflowing */
+    overflow-wrap: break-word;
+}
+.payment-terms-content li:last-child {
+    margin-bottom: 0;
+}
+
 /* ── SMOOTH TABLE ROW HOVER ──────────────────────────────────── */
 .tbl tbody tr {
     transition: background var(--transition-fast), border-left var(--transition-fast);

@@ -961,7 +961,7 @@ export default function CreateQuotation() {
 
                             <div style={{ width: '100%', height: '1px', backgroundColor: 'var(--g200)', margin: '16px 0' }}></div>
 
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', alignItems: 'flex-end' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', alignItems: 'center' }}>
                                 <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--g900)' }}>Grand Total</span>
                                 <span style={{ fontSize: '20px', fontWeight: 800, color: 'var(--g900)' }}>{fmt(grandTotal)}</span>
                             </div>
@@ -986,9 +986,10 @@ export default function CreateQuotation() {
 
                             {/* Payment Terms */}
                             <div style={{ backgroundColor: 'var(--g50)', borderRadius: '8px', padding: '16px', border: '1px solid var(--g200)', marginBottom: '24px' }}>
-                                <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--g600)', marginBottom: '12px', textTransform: 'uppercase' }}>Payment Terms</div>
+                                <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--g600)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.02em' }}>Payment Terms</div>
                                 <div 
-                                    style={{ fontSize: '13px', color: 'var(--g700)', lineHeight: '1.6', paddingLeft: '4px' }} 
+                                    className="payment-terms-content"
+                                    style={{ fontSize: '13px', color: 'var(--g700)', lineHeight: '1.6' }} 
                                     dangerouslySetInnerHTML={{ __html: globalSettings.quotation?.content?.page1?.paymentTerms || '<ul><li>10% Advance against Confirmed Purchase Order</li><li>70% Procurement of Raw Material</li><li>10% Before Dispatch / Installation</li><li>10% After Successful Installation & Commissioning</li></ul>' }}
                                 />
                             </div>

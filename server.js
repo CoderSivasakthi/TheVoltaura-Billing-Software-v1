@@ -901,7 +901,10 @@ app.post('/api/auth/login', async (req, res) => {
 
     try { await updateEntity('users', user.id, { last_login_at: new Date().toISOString() }); } catch(e) {}
     
-    const role = (user.role === 'admin' || user.role === 'head_office') ? 'super_admin' : (user.role || 'franchise_admin');
+    const rawRole = user.role || 'franchise_admin';
+    const normRole = rawRole.toLowerCase().replace(/[\s-]/g, '_');
+    const role = (normRole === 'admin' || normRole === 'head_office' || normRole === 'super_admin' || normRole === 'superadmin') ? 'super_admin' : rawRole;
+    
     const tokenPayload = { 
       username:    user.username, 
       role,
@@ -939,7 +942,10 @@ function requireAuth(req, res, next) {
     const payload = jwt.verify(raw, JWT_SECRET);
     req.user = payload;
     if (!req.user.tenant_id) req.user.tenant_id = 'admin';
-    if (req.user.role === 'admin' || req.user.role === 'head_office') req.user.role = 'super_admin';
+    
+    const normRole = req.user.role ? req.user.role.toLowerCase().replace(/[\s-]/g, '_') : '';
+    if (normRole === 'admin' || normRole === 'head_office' || normRole === 'superadmin') req.user.role = 'super_admin';
+    
     // Attach req.tenant for convenience
     req.tenant = {
       id:                req.user.tenant_id,

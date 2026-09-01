@@ -68,7 +68,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const isSuperAdmin     = () => user?.role === 'super_admin' || user?.role === 'admin' || user?.role === 'head_office'
+  const isSuperAdmin = () => {
+    const r = user?.role ? user.role.toLowerCase().replace(/[\s-]/g, '_') : '';
+    return r === 'super_admin' || r === 'admin' || r === 'head_office' || r === 'superadmin';
+  }
   const isFranchiseAdmin = () => user?.role === 'franchise_admin'
   const isFranchiseStaff = () => user?.role === 'franchise_staff'
 
@@ -126,6 +129,7 @@ export function getCurrentFranchiseId(): string | null {
 }
 
 export function isCurrentUserSuperAdmin(): boolean {
-  const role = getCurrentUserRole()
-  return role === 'super_admin' || role === 'admin' || role === 'head_office'
+  const role = getCurrentUserRole();
+  const r = role ? role.toLowerCase().replace(/[\s-]/g, '_') : '';
+  return r === 'super_admin' || r === 'admin' || r === 'head_office' || r === 'superadmin';
 }

@@ -24,11 +24,19 @@ const DROP_KEYS = new Set([
 function mapToDb(payload) {
   const out = {};
   if (!payload || typeof payload !== 'object') return out;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  
   for (const [key, value] of Object.entries(payload)) {
     if (value === undefined || typeof value === 'function') continue;
     if (DROP_KEYS.has(key)) continue;
+    
     const mapped = toSnakeKey(key);
-    const finalValue = value === '' ? null : (isPlainObject(value) ? value : value);
+    let finalValue = value === '' ? null : (isPlainObject(value) ? value : value);
+    
+    if (mapped === 'company_branch_id' && finalValue && !uuidRegex.test(finalValue)) {
+        finalValue = null;
+    }
+    
     if (mapped === 'date') {
       out.document_date = finalValue;
       continue;

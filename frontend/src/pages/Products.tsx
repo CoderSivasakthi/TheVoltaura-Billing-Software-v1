@@ -26,8 +26,7 @@ const getCatIcon = (cat: string) => {
 }
 
 export default function Products() {
-    const { user } = useAuth()
-    const isLogger = ['franchise_logger', 'franchise logger'].includes(user?.role?.toLowerCase() || '')
+    const { isSuperAdmin } = useAuth()
 
     const [products, setProducts] = useState<any[]>([])
     const [catFilter, setCatFilter] = useState('all')
@@ -88,7 +87,7 @@ export default function Products() {
             <div className="breadcrumb"><a href="#" onClick={e => { e.preventDefault(); navigate('/dashboard') }}>Home</a><span className="bc-sep">›</span><span className="bc-cur">Products</span></div>
             <div className="ph">
                 <div><h2>Product Master</h2><div className="sub">Manage inventory, services, components and technical specifications.</div></div>
-                <div className="ph-actions"><button className="btn btn-primary" onClick={() => navigate('/products/new')}><Plus size={14} /> Add Product</button></div>
+                <div className="ph-actions">{isSuperAdmin() && <button className="btn btn-primary" onClick={() => navigate('/products/new')}><Plus size={14} /> Add Product</button>}</div>
             </div>
 
             {/* Stats */}
@@ -119,7 +118,7 @@ export default function Products() {
                                 <th>Product Details</th>
                                 <th>Category / Type</th>
                                 <th>Stock & Unit</th>
-                                {!isLogger && <th>Net Price</th>}
+                                {isSuperAdmin() && <th>Net Price</th>}
                                 <th>Selling Price</th>
                                 <th>Status</th>
                                 <th>Actions</th>
@@ -127,7 +126,7 @@ export default function Products() {
                         </thead>
                         <tbody id="productsBody">
                             {paginated.length === 0 ? (
-                                <tr><td colSpan={isLogger ? 6 : 7} className="empty-state">No products found</td></tr>
+                                <tr><td colSpan={isSuperAdmin() ? 7 : 6} className="empty-state">No products found</td></tr>
                             ) : paginated.map((p: any) => {
                                 const Icon = getCatIcon(p.category || '')
                                 const isService = p.productType === 'Service Item'
@@ -135,11 +134,11 @@ export default function Products() {
                                 return (
                                     <tr
                                         key={p.id}
-                                        className="tr-clickable"
-                                        onClick={() => navigate(`/products/${p.id}/edit`)}
-                                        tabIndex={0}
-                                        role="button"
-                                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/products/${p.id}/edit`); } }}
+                                        className={isSuperAdmin() ? "tr-clickable" : ""}
+                                        onClick={() => isSuperAdmin() && navigate(`/products/${p.id}/edit`)}
+                                        tabIndex={isSuperAdmin() ? 0 : undefined}
+                                        role={isSuperAdmin() ? "button" : undefined}
+                                        onKeyDown={(e) => { if (isSuperAdmin() && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); navigate(`/products/${p.id}/edit`); } }}
                                     >
                                         <td>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -168,7 +167,7 @@ export default function Products() {
                                                 </div>
                                             )}
                                         </td>
-                                        {!isLogger && <td>{fmt(p.netPrice || 0)}</td>}
+                                        {isSuperAdmin() && <td>{fmt(p.netPrice || 0)}</td>}
                                         <td><strong style={{ color: 'var(--g800)' }}>{fmt(p.sellingPrice || p.price || 0)}</strong></td>
                                         <td>
                                             {p.productStatus === 'Inactive' ? (
@@ -180,7 +179,7 @@ export default function Products() {
                                             )}
                                         </td>
                                         <td onClick={e => e.stopPropagation()}>
-                                            <button className="abl abl-orange" onClick={() => navigate(`/products/${p.id}/edit`)}><Pencil size={12} /> Edit</button>
+                                            {isSuperAdmin() && <button className="abl abl-orange" onClick={() => navigate(`/products/${p.id}/edit`)}><Pencil size={12} /> Edit</button>}
                                             <button className="abl abl-red" onClick={() => deleteProduct(p.id)}><Trash2 size={12} /> Delete</button>
                                         </td>
                                     </tr>

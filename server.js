@@ -1039,23 +1039,33 @@ app.delete('/api/customers/:id', requireAuth, async (req, res) => {
 });
 
 // --- Products ---
-app.get('/api/products', async (req, res) => {
+app.get('/api/products', requireAuth, async (req, res) => {
   try {
-    const products = await listEntities('products');
+    let products = await listEntities('products');
+    if (!req.tenant || !req.tenant.is_super_admin) {
+        products = products.map(p => {
+            const { netPrice, ...rest } = p;
+            return rest;
+        });
+    }
     res.json(products);
   } catch (e) { console.error("500 ERROR CAUGHT:", e); require("fs").appendFileSync("server_errors.log", String(e.stack) + "\n"); res.status(500).json({ error: e.message }); }
 });
 
-app.get('/api/products/:id', async (req, res) => {
+app.get('/api/products/:id', requireAuth, async (req, res) => {
   try {
     const p = await findEntity('products', req.params.id);
     if (!p) return res.status(404).json({ error: 'Not found' });
+    if (!req.tenant || !req.tenant.is_super_admin) {
+        delete p.netPrice;
+    }
     res.json(p);
   } catch (e) { console.error("500 ERROR CAUGHT:", e); require("fs").appendFileSync("server_errors.log", String(e.stack) + "\n"); res.status(500).json({ error: e.message }); }
 });
 
 app.post('/api/products', requireAuth, async (req, res) => {
   try {
+    if (!req.tenant || !req.tenant.is_super_admin) return res.status(403).json({ error: 'Only Super Admin can add products' });
     const payload = req.body;
     const record = await createEntity('products', payload);
     try { broadcastEvent({ type: 'product.created', data: record }, record.organization_id || null); } catch (e) { }
@@ -1065,6 +1075,7 @@ app.post('/api/products', requireAuth, async (req, res) => {
 
 app.put('/api/products/:id', requireAuth, async (req, res) => {
   try {
+    if (!req.tenant || !req.tenant.is_super_admin) return res.status(403).json({ error: 'Only Super Admin can edit product details' });
     const upd = await updateEntity('products', req.params.id, req.body);
     if (!upd) return res.status(404).json({ error: 'Not found' });
     res.json(upd);

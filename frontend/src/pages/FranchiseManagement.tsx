@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import {
     Building2, Plus, Search,
     ToggleLeft, ToggleRight,
-    RefreshCw, Key,X, Check, AlertTriangle, Sun, User, Phone, Mail,
-    MapPin, ChevronLeft, Save, Copy, CheckCircle
+    RefreshCw, Key,X, Check, AlertTriangle, User, Phone, Mail,
+    MapPin, ChevronLeft, Save, Copy, CheckCircle, Edit3, Trash2
 } from 'lucide-react'
 import { api } from '../services/api'
 import { useAuth } from '../context/AuthContext'
@@ -62,6 +62,8 @@ export default function FranchiseManagement() {
     const [success, setSuccess]         = useState('')
     const [copiedPwd, setCopiedPwd]     = useState(false)
     const [confirmSuspend, setConfirmSuspend] = useState<Franchise | null>(null)
+    const [confirmDelete, setConfirmDelete] = useState<Franchise | null>(null)
+    const [editFranchiseId, setEditFranchiseId] = useState<string | null>(null)
     const [resetFranchise, setResetFranchise] = useState<Franchise | null>(null)
     const [resetPwd, setResetPwd]       = useState('')
 
@@ -90,20 +92,30 @@ export default function FranchiseManagement() {
     )
 
     const handleCreate = async () => {
-        if (!form.name || !form.adminEmail || !form.username || !form.password) {
-            setError('Name, Admin Email, Username and Password are required.')
+        if (!form.name || !form.adminEmail) {
+            setError('Name and Admin Email are required.')
+            return
+        }
+        if (!editFranchiseId && (!form.username || !form.password)) {
+            setError('Username and Password are required for new franchises.')
             return
         }
         setSaving(true)
         setError('')
         try {
-            await api('POST', '/api/franchises', form, true)
-            setSuccess(`Franchise "${form.name}" created successfully!`)
+            if (editFranchiseId) {
+                await api('PUT', `/api/franchises/${editFranchiseId}`, form, true)
+                setSuccess(`Franchise "${form.name}" updated successfully!`)
+            } else {
+                await api('POST', '/api/franchises', form, true)
+                setSuccess(`Franchise "${form.name}" created successfully!`)
+            }
             setShowCreate(false)
+            setEditFranchiseId(null)
             setForm(emptyForm)
             load()
         } catch (e: any) {
-            setError(e.message || 'Failed to create franchise')
+            setError(e.message || `Failed to ${editFranchiseId ? 'update' : 'create'} franchise`)
         } finally { setSaving(false) }
     }
 
@@ -123,6 +135,19 @@ export default function FranchiseManagement() {
         setSuccess(`${confirmSuspend.name} suspended.`)
         setConfirmSuspend(null)
         load()
+    }
+
+    const handleDeleteConfirm = async () => {
+        if (!confirmDelete) return
+        try {
+            await api('DELETE', `/api/franchises/${confirmDelete.id}`, undefined, true)
+            setSuccess(`Franchise "${confirmDelete.name}" deleted successfully.`)
+            setConfirmDelete(null)
+            load()
+        } catch (e: any) {
+            setError(e.message || 'Failed to delete franchise')
+            setConfirmDelete(null) // Hide modal on error so they can read the error
+        }
     }
 
     const handleResetPassword = async () => {
@@ -236,6 +261,26 @@ export default function FranchiseManagement() {
                             {/* Actions */}
                             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                                 <button
+                                    onClick={() => {
+                                        setEditFranchiseId(fr.id)
+                                        setForm({
+                                            name: fr.name || '',
+                                            adminName: fr.admin_name || '',
+                                            adminEmail: fr.admin_email || '',
+                                            adminPhone: fr.admin_phone || '',
+                                            branchAddress: fr.branch_address || '',
+                                            city: fr.city || '',
+                                            state: fr.state || '',
+                                            username: '',
+                                            password: ''
+                                        })
+                                        setShowCreate(true)
+                                    }}
+                                    style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', background: 'rgba(59,130,246,0.08)', color: '#3b82f6', border: '1px solid #bfdbfe', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}
+                                >
+                                    <Edit3 size={13} /> Edit
+                                </button>
+                                <button
                                     onClick={() => handleToggleStatus(fr)}
                                     style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', background: fr.status === 'Active' ? 'rgba(239,68,68,0.08)' : 'rgba(16,185,129,0.08)', color: fr.status === 'Active' ? '#ef4444' : '#10b981', border: `1px solid ${fr.status === 'Active' ? '#fca5a5' : '#6ee7b7'}`, borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}
                                 >
@@ -247,6 +292,12 @@ export default function FranchiseManagement() {
                                 >
                                     <Key size={13} /> Reset Pwd
                                 </button>
+                                <button
+                                    onClick={() => setConfirmDelete(fr)}
+                                    style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', background: 'rgba(239,68,68,0.08)', color: '#ef4444', border: '1px solid #fca5a5', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}
+                                >
+                                    <Trash2 size={13} /> Delete
+                                </button>
                             </div>
                         </div>
                     ))}
@@ -256,16 +307,15 @@ export default function FranchiseManagement() {
             {/* Create Franchise Modal */}
             {showCreate && (
                 <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
-                    <div style={{ background: 'var(--card, #fff)', borderRadius: '16px', width: '100%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
-                        <div style={{ padding: '24px', borderBottom: '1px solid var(--border, #e2e8f0)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                <Sun size={20} color="#6366f1" />
-                                <div style={{ fontWeight: 700, fontSize: '16px', color: 'var(--text-primary, #1e293b)' }}>Create New Franchise</div>
+                    <div style={{ background: 'var(--card, #fff)', borderRadius: '12px', display: 'flex', flexDirection: 'column', maxHeight: '90vh', maxWidth: '600px', width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.3)', overflow: 'hidden' }}>
+                        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border, #e2e8f0)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ fontWeight: 700, fontSize: '18px', color: 'var(--text-primary, #1e293b)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <Building2 size={20} color="#6366f1" /> {editFranchiseId ? 'Edit Franchise' : 'Create New Franchise'}
                             </div>
                             <button onClick={() => setShowCreate(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={20} /></button>
                         </div>
 
-                        <div style={{ padding: '24px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                        <div style={{ padding: '24px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', overflowY: 'auto' }}>
                             {error && <div style={{ gridColumn: '1/-1', background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: '8px', padding: '10px', color: '#dc2626', fontSize: '13px' }}>{error}</div>}
 
                             {[
@@ -298,38 +348,41 @@ export default function FranchiseManagement() {
                                 />
                             </div>
 
-                            <div style={{ gridColumn: '1/-1', background: 'rgba(99,102,241,0.05)', border: '1px solid #c7d2fe', borderRadius: '10px', padding: '16px' }}>
-                                <div style={{ fontWeight: 600, fontSize: '13px', color: '#4f46e5', marginBottom: '12px' }}>Login Credentials</div>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                                    <div>
-                                        <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#64748b', marginBottom: '6px' }}>Username *</label>
-                                        <input
-                                            type="text"
-                                            placeholder="erode@thevoltaura.com"
-                                            value={form.username}
-                                            onChange={e => setForm(p => ({ ...p, username: e.target.value }))}
-                                            style={{ width: '100%', padding: '9px 12px', border: '1px solid #c7d2fe', borderRadius: '8px', fontSize: '13px', outline: 'none', background: '#fff', boxSizing: 'border-box' }}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#64748b', marginBottom: '6px' }}>Initial Password *</label>
-                                        <div style={{ display: 'flex', gap: '6px' }}>
+                            {/* Login Credentials (Only show when creating) */}
+                            {!editFranchiseId && (
+                                <div style={{ gridColumn: '1/-1', background: 'rgba(99,102,241,0.05)', border: '1px solid #c7d2fe', borderRadius: '10px', padding: '16px' }}>
+                                    <div style={{ fontWeight: 600, fontSize: '13px', color: '#4f46e5', marginBottom: '12px' }}>Login Credentials</div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                        <div>
+                                            <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#64748b', marginBottom: '6px' }}>Username *</label>
                                             <input
                                                 type="text"
-                                                value={form.password}
-                                                onChange={e => setForm(p => ({ ...p, password: e.target.value }))}
-                                                style={{ flex: 1, padding: '9px 12px', border: '1px solid #c7d2fe', borderRadius: '8px', fontSize: '12px', outline: 'none', background: '#fff', fontFamily: 'monospace', boxSizing: 'border-box' }}
+                                                placeholder="erode@thevoltaura.com"
+                                                value={form.username}
+                                                onChange={e => setForm(p => ({ ...p, username: e.target.value }))}
+                                                style={{ width: '100%', padding: '9px 12px', border: '1px solid #c7d2fe', borderRadius: '8px', fontSize: '13px', outline: 'none', background: '#fff', boxSizing: 'border-box' }}
                                             />
-                                            <button onClick={() => copyPassword(form.password)} title="Copy" style={{ padding: '9px', background: copiedPwd ? '#10b981' : '#6366f1', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>
-                                                {copiedPwd ? <Check size={14} /> : <Copy size={14} />}
-                                            </button>
-                                            <button onClick={() => setForm(p => ({ ...p, password: genPassword() }))} title="Regenerate" style={{ padding: '9px', background: '#e0e7ff', color: '#6366f1', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>
-                                                <RefreshCw size={14} />
-                                            </button>
+                                        </div>
+                                        <div>
+                                            <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#64748b', marginBottom: '6px' }}>Initial Password *</label>
+                                            <div style={{ display: 'flex', gap: '6px' }}>
+                                                <input
+                                                    type="text"
+                                                    value={form.password}
+                                                    onChange={e => setForm(p => ({ ...p, password: e.target.value }))}
+                                                    style={{ flex: 1, padding: '9px 12px', border: '1px solid #c7d2fe', borderRadius: '8px', fontSize: '12px', outline: 'none', background: '#fff', fontFamily: 'monospace', boxSizing: 'border-box' }}
+                                                />
+                                                <button onClick={() => copyPassword(form.password)} title="Copy" style={{ padding: '9px', background: copiedPwd ? '#10b981' : '#6366f1', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>
+                                                    {copiedPwd ? <Check size={14} /> : <Copy size={14} />}
+                                                </button>
+                                                <button onClick={() => setForm(p => ({ ...p, password: genPassword() }))} title="Regenerate" style={{ padding: '9px', background: '#e0e7ff', color: '#6366f1', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>
+                                                    <RefreshCw size={14} />
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
+                            )}
                         </div>
 
                         <div style={{ padding: '16px 24px', borderTop: '1px solid var(--border, #e2e8f0)', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
@@ -337,7 +390,7 @@ export default function FranchiseManagement() {
                                 Cancel
                             </button>
                             <button onClick={handleCreate} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 20px', background: '#6366f1', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 600, opacity: saving ? 0.7 : 1 }}>
-                                <Save size={14} /> {saving ? 'Creating…' : 'Create Franchise'}
+                                <Save size={14} /> {saving ? 'Saving…' : (editFranchiseId ? 'Save Changes' : 'Create Franchise')}
                             </button>
                         </div>
                     </div>
@@ -360,6 +413,27 @@ export default function FranchiseManagement() {
                         <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
                             <button onClick={() => setConfirmSuspend(null)} style={{ padding: '8px 16px', background: 'var(--bg, #f8fafc)', border: '1px solid var(--border, #e2e8f0)', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 600, color: '#64748b' }}>Cancel</button>
                             <button onClick={handleSuspendConfirm} style={{ padding: '8px 16px', background: '#ef4444', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>Suspend</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Confirm Modal */}
+            {confirmDelete && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+                    <div style={{ background: 'var(--card, #fff)', borderRadius: '12px', padding: '28px', maxWidth: '400px', width: '90%', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                            <div style={{ width: 40, height: 40, background: '#fef2f2', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <Trash2 size={20} color="#ef4444" />
+                            </div>
+                            <div style={{ fontWeight: 700, fontSize: '16px', color: 'var(--text-primary, #1e293b)' }}>Delete Franchise?</div>
+                        </div>
+                        <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '20px', lineHeight: 1.6 }}>
+                            Are you sure you want to delete <strong>{confirmDelete.name}</strong>? This action cannot be undone.
+                        </p>
+                        <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                            <button onClick={() => setConfirmDelete(null)} style={{ padding: '8px 16px', background: 'var(--bg, #f8fafc)', border: '1px solid var(--border, #e2e8f0)', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 600, color: '#64748b' }}>Cancel</button>
+                            <button onClick={handleDeleteConfirm} style={{ padding: '8px 16px', background: '#ef4444', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>Delete</button>
                         </div>
                     </div>
                 </div>

@@ -2110,6 +2110,56 @@ app.put('/api/franchises/:id', requireAuth, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// DELETE /api/franchises/:id — delete a franchise safely
+app.delete('/api/franchises/:id', requireAuth, async (req, res) => {
+  if (!req.tenant?.is_super_admin) return res.status(403).json({ error: 'Super Admin only' });
+  try {
+    const fid = req.params.id;
+    // Safe Delete: Check for associated records
+    const customers = await listEntities('customers');
+    const quotations = await listEntities('quotations');
+    const invoices = await listEntities('invoices');
+    const payments = await listEntities('payments');
+    const orders = await listEntities('orders');
+    const amc = await listEntities('amc');
+    
+    const hasCustomers = customers.some(c => c.franchise_id === fid || c.tenant_id === fid);
+    const hasQuotations = quotations.some(q => q.franchise_id === fid || q.tenant_id === fid);
+    const hasInvoices = invoices.some(i => i.franchise_id === fid || i.tenant_id === fid);
+    const hasPayments = payments.some(p => p.franchise_id === fid || p.tenant_id === fid);
+    const hasOrders = orders.some(o => o.franchise_id === fid || o.tenant_id === fid);
+    const hasAmc = amc.some(a => a.franchise_id === fid || a.tenant_id === fid);
+
+    if (hasCustomers || hasQuotations || hasInvoices || hasPayments || hasOrders || hasAmc) {
+      const parts = [];
+      if (hasCustomers) parts.push('Customers');
+      if (hasQuotations) parts.push('Quotations');
+      if (hasInvoices) parts.push('Invoices');
+      if (hasPayments) parts.push('Payments');
+      if (hasOrders) parts.push('Orders');
+      if (hasAmc) parts.push('AMC Contracts');
+      
+      return res.status(400).json({ 
+        error: `Cannot delete franchise. It has associated records (${parts.join(', ')}). Please suspend/deactivate the franchise instead.` 
+      });
+    }
+
+    // Also delete associated users
+    const users = await listEntities('users');
+    for (const u of users) {
+      if (u.franchise_id === fid || u.tenant_id === fid) {
+        await deleteEntity('users', u.id);
+      }
+    }
+
+    const del = await deleteEntity('franchises', fid);
+    if (!del) return res.status(404).json({ error: 'Franchise not found' });
+    
+    await supa.writeAuditLog({ action: 'delete_franchise', entity_type: 'franchise', entity_id: fid, performed_by: req.tenant.username, ip_address: req.ip });
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // POST /api/franchises/:id/suspend
 app.post('/api/franchises/:id/suspend', requireAuth, async (req, res) => {
   if (!req.tenant?.is_super_admin) return res.status(403).json({ error: 'Super Admin only' });

@@ -1,0 +1,22 @@
+[
+  {
+    "id": "usr-1",
+    "username": "admin",
+    "password": "admin",
+    "role": "super_admin",
+    "tenant_id": "admin",
+    "franchise_id": null,
+    "created_at": "2026-08-19T19:57:49.041Z"
+  },
+  {
+    "id": "USR-2",
+    "createdAt": "2026-08-29T18:40:15.606Z",
+    "username": "gire@thevoltaura.com",
+    "password": "$2a$10$wfOogM05K8t25KZQxHZSjuBZKTurSnRJtV6yTnC/HY4hG39vst4i6",
+    "role": "franchise_admin",
+    "tenant_id": "FR-1788028815522",
+    "franchise_id": "FR-1788028815522",
+    "is_active": true,
+    "last_login_at": "2026-08-30T13:45:47.666Z"
+  }
+]

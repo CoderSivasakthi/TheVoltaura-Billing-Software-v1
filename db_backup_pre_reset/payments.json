@@ -1,0 +1,14 @@
+[
+  {
+    "id": "PAY-1",
+    "createdAt": "2026-07-19T17:32:35.533Z",
+    "status": "Paid",
+    "invoiceId": "SS20260003",
+    "amount": 17700,
+    "method": "System Transfer",
+    "date": "2026-07-19",
+    "reference": "Auto-marked as Paid",
+    "customerId": "CUST-2",
+    "customerName": "BANGARU "
+  }
+]

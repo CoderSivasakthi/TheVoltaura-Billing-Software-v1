@@ -1,0 +1,16 @@
+[
+  {
+    "id": "FR-1788028815522",
+    "createdAt": "2026-08-29T18:40:15.522Z",
+    "franchise_code": "FR-1788028815522",
+    "name": "Erode",
+    "city": "Erode",
+    "state": "Tamilnadu",
+    "admin_name": "gire",
+    "admin_email": "gire@thevoltaura.com",
+    "admin_phone": "99999 99999",
+    "branch_address": null,
+    "status": "Active",
+    "created_by": "admin"
+  }
+]

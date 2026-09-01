@@ -1,0 +1,340 @@
+[
+  {
+    "id": "SS20260001",
+    "status": "Pending",
+    "createdAt": "2026-07-18T06:14:16.765Z",
+    "customer": {
+      "id": "CUST-1",
+      "name": "siva",
+      "address": "ckwqeunk",
+      "gstin": "by283bvic98273h"
+    },
+    "items": [
+      {
+        "productId": "PROD-1",
+        "name": "panel",
+        "qty": 1,
+        "price": 15000,
+        "gst_rate": 18,
+        "total": 17700
+      }
+    ],
+    "subtotal": 15000,
+    "gst": 2700,
+    "discount": 0,
+    "total": 17700,
+    "notes": "",
+    "quotationDate": "2026-07-18",
+    "billingAddress": "",
+    "siteAddress": "",
+    "quotationId": "QT-SS20260001",
+    "sourceQuotationId": "QT-SS20260001"
+  },
+  {
+    "id": "SS20260002",
+    "status": "Pending",
+    "createdAt": "2026-07-18T07:33:42.460Z",
+    "customer": {
+      "id": "CUST-1",
+      "name": "siva",
+      "address": "ckwqeunk",
+      "gstin": "by283bvic98273h"
+    },
+    "items": [
+      {
+        "productId": "PROD-1",
+        "name": "panel",
+        "qty": 1,
+        "price": 15000,
+        "gst_rate": 18,
+        "total": 17700
+      }
+    ],
+    "subtotal": 15000,
+    "gst": 2700,
+    "discount": 0,
+    "total": 17700,
+    "notes": "",
+    "quotationDate": "2026-07-18",
+    "billingAddress": "",
+    "siteAddress": "",
+    "quotationId": "QT-SS20260003",
+    "sourceQuotationId": "QT-SS20260003"
+  },
+  {
+    "id": "SS20260003",
+    "status": "Paid",
+    "createdAt": "2026-07-19T14:15:32.711Z",
+    "companyBranchId": "1",
+    "companyGst": "33AAMCT8847M1ZI",
+    "companyAddress": "334/13 Rajiv Gandhi Nagar,Pallipalayam, Namakkal,Tamilnadu – 638008",
+    "customerId": "CUST-2",
+    "customerName": "BANGARU ",
+    "date": "2026-07-19",
+    "billingAddr": "4/419 AMERTHAMBAL NAGAR KARUR,\nTAMILNADU.",
+    "siteAddr": "4/419 AMERTHAMBAL NAGAR KARUR,\nTAMILNADU.",
+    "notes": "Standard 10-year warranty on inverter, 30-year on panels.\n\n[Meta] Project: Grid-Tie | Category: Residential | Exclusions: Civil work and TNEB approvals excluded.",
+    "discount": 0,
+    "items": [
+      {
+        "id": "1",
+        "productId": "PROD-1",
+        "productName": "panel",
+        "qty": 1,
+        "price": 15000,
+        "gstRate": 18,
+        "hsnCode": "",
+        "description": ""
+      }
+    ],
+    "subtotal": 15000,
+    "totalTax": 1335,
+    "grandTotal": 16335,
+    "total": 16335,
+    "systemSizeKw": 0.55,
+    "dailyGeneration": 3.03,
+    "annualGeneration": 1104,
+    "gstAmount": 1335,
+    "subsidyAmount": 16500,
+    "netCustomerCost": -165,
+    "quotationId": "QT-SS20260006",
+    "sourceQuotationId": "QT-SS20260006",
+    "paid": 17700
+  },
+  {
+    "id": "TVA202627001",
+    "status": "Pending",
+    "createdAt": "2026-07-20T11:50:54.254Z",
+    "companyBranchId": "1",
+    "companyGst": "33AAMCT8847M1ZI",
+    "companyAddress": "334/13 Rajiv Gandhi Nagar,Pallipalayam, Namakkal,Tamilnadu – 638008",
+    "customerId": "CUST-2",
+    "customerName": "BANGARU ",
+    "date": "2026-07-20",
+    "billingAddr": "4/419 AMERTHAMBAL NAGAR KARUR,\nTAMILNADU.",
+    "siteAddr": "4/419 AMERTHAMBAL NAGAR KARUR,\nTAMILNADU.",
+    "notes": "Standard 10-year warranty on inverter, 30-year on panels.\n\n[Meta] Project: Grid-Tie | Category: Residential | Exclusions: Civil work and TNEB approvals excluded.",
+    "discount": 0,
+    "items": [
+      {
+        "id": "row-1-ocf7maz",
+        "productId": "PROD-2",
+        "productName": "vikram DCR 550wp bifacial topcon",
+        "qty": 6,
+        "price": 15590,
+        "gstRate": 5,
+        "hsnCode": "",
+        "description": ""
+      }
+    ],
+    "subtotal": 93540,
+    "totalTax": 8325.06,
+    "grandTotal": 101865,
+    "total": 101865,
+    "customerInfo": {
+      "skipped": true,
+      "consumerNumber": "",
+      "ebName": "",
+      "ebMobile": "",
+      "customerMobile": "",
+      "email": "",
+      "paymentMode": "Full Payment",
+      "loanFinanceCompany": "",
+      "loanAmount": "",
+      "loanDownPayment": "",
+      "loanTenure": "",
+      "loanEmi": "",
+      "loanStatus": "Applied"
+    },
+    "documents": {},
+    "systemSizeKw": 3.3,
+    "dailyGeneration": 18.15,
+    "annualGeneration": 6625,
+    "gstAmount": 8325.06,
+    "subsidyAmount": 78000,
+    "netCustomerCost": 23865,
+    "quotationId": "QT-SS20260013",
+    "sourceQuotationId": "QT-SS20260013"
+  },
+  {
+    "id": "TVA202627002",
+    "status": "Pending",
+    "createdAt": "2026-07-21T11:19:26.726Z",
+    "companyBranchId": "1",
+    "companyGst": "33AAMCT8847M1ZI",
+    "companyAddress": "334/13 Rajiv Gandhi Nagar,Pallipalayam, Namakkal,Tamilnadu – 638008",
+    "customerId": "CUST-2",
+    "customerName": "BANGARU ",
+    "date": "2026-07-21",
+    "billingAddr": "4/419 AMERTHAMBAL NAGAR KARUR,\nTAMILNADU.",
+    "siteAddr": "4/419 AMERTHAMBAL NAGAR KARUR,\nTAMILNADU.",
+    "notes": "Standard 10-year warranty on inverter, 30-year on panels.\n\n[Meta] Project: Grid-Tie | Category: Residential | Exclusions: Civil work and TNEB approvals excluded.",
+    "discount": 0,
+    "items": [
+      {
+        "id": "row-1-y67bfvi",
+        "productId": "PROD-3",
+        "productName": "vikram DCR 550,590wp bifacial panel",
+        "qty": 8,
+        "price": 18890,
+        "gstRate": 5,
+        "hsnCode": "",
+        "description": ""
+      }
+    ],
+    "subtotal": 151120,
+    "totalTax": 13449.68,
+    "grandTotal": 164570,
+    "total": 164570,
+    "customerInfo": {
+      "skipped": true,
+      "consumerNumber": "",
+      "ebName": "",
+      "ebMobile": "",
+      "customerMobile": "",
+      "email": "",
+      "paymentMode": "Full Payment",
+      "loanFinanceCompany": "",
+      "loanAmount": "",
+      "loanDownPayment": "",
+      "loanTenure": "",
+      "loanEmi": "",
+      "loanStatus": "Applied"
+    },
+    "documents": {},
+    "systemSizeKw": 4.72,
+    "dailyGeneration": 25.96,
+    "annualGeneration": 9475,
+    "gstAmount": 13449.68,
+    "subsidyAmount": 78000,
+    "netCustomerCost": 86570,
+    "quotationId": "QTVA202627001",
+    "sourceQuotationId": "QTVA202627001"
+  },
+  {
+    "id": "TVA202627003",
+    "status": "Pending",
+    "createdAt": "2026-07-21T19:47:09.430Z",
+    "companyBranchId": "1",
+    "companyGst": "33AAMCT8847M1ZI",
+    "companyAddress": "334/13 Rajiv Gandhi Nagar,Pallipalayam, Namakkal,Tamilnadu – 638008",
+    "customerId": "CUST-3",
+    "customerName": "N Balasubramaniam",
+    "date": "2026-07-21",
+    "billingAddr": "333/2 Amirthammal Nagar,\nAndankovil West, karur,\nTamilnadu 639008",
+    "siteAddr": "333/2 Amirthammal Nagar,\nAndankovil West, karur,\nTamilnadu 639008",
+    "notes": "Standard 10-year warranty on inverter, 30-year on panels.\n\n[Meta] Project: Grid-Tie | Category: Residential | Exclusions: Civil work and TNEB approvals excluded.",
+    "discount": 0,
+    "items": [
+      {
+        "id": "row-1-fd9tg63",
+        "productId": "PROD-3",
+        "productName": "vikram DCR 550,590wp bifacial panel",
+        "qty": 1,
+        "price": 18890,
+        "gstRate": 5,
+        "hsnCode": "",
+        "description": ""
+      },
+      {
+        "id": "row-2-hpqzlp1",
+        "productId": "PROD-5",
+        "productName": "DEYE 5kw 48v 1PH LV Hybrid Inverter -2MPPT/1String",
+        "qty": 1,
+        "price": 76460,
+        "gstRate": 5,
+        "hsnCode": "",
+        "description": ""
+      }
+    ],
+    "subtotal": 95350,
+    "totalTax": 8486.15,
+    "grandTotal": 103836,
+    "total": 103836,
+    "customerInfo": {
+      "skipped": false,
+      "consumerNumber": "123456789",
+      "ebName": "",
+      "ebMobile": "",
+      "customerMobile": "9876543211",
+      "email": "",
+      "paymentMode": "Loan",
+      "loanFinanceCompany": "iob",
+      "loanAmount": "200000",
+      "loanDownPayment": "20000",
+      "loanTenure": "120",
+      "loanEmi": "",
+      "loanStatus": "Under Process"
+    },
+    "documents": {
+      "eb_receipt": {
+        "id": "1784663117314-702237840-Screenshot_2026-07-22_at_12.21.34â¯AM.png",
+        "name": "Screenshot 2026-07-22 at 12.21.34â¯AM.png",
+        "url": "/uploads/1784663117314-702237840-Screenshot_2026-07-22_at_12.21.34â¯AM.png",
+        "type": "image/png",
+        "uploadedAt": "2026-07-21T19:45:17.317Z"
+      },
+      "pan": {
+        "id": "1784663120392-408633309-Screenshot_2026-07-21_at_11.38.12â¯PM.png",
+        "name": "Screenshot 2026-07-21 at 11.38.12â¯PM.png",
+        "url": "/uploads/1784663120392-408633309-Screenshot_2026-07-21_at_11.38.12â¯PM.png",
+        "type": "image/png",
+        "uploadedAt": "2026-07-21T19:45:20.393Z"
+      },
+      "aadhaar": {
+        "id": "1784663124621-66510359-Screenshot_2026-07-21_at_11.37.55â¯PM.png",
+        "name": "Screenshot 2026-07-21 at 11.37.55â¯PM.png",
+        "url": "/uploads/1784663124621-66510359-Screenshot_2026-07-21_at_11.37.55â¯PM.png",
+        "type": "image/png",
+        "uploadedAt": "2026-07-21T19:45:24.623Z"
+      },
+      "bank_passbook": {
+        "id": "1784663127594-701550616-Screenshot_2026-07-21_at_12.33.32â¯PM.png",
+        "name": "Screenshot 2026-07-21 at 12.33.32â¯PM.png",
+        "url": "/uploads/1784663127594-701550616-Screenshot_2026-07-21_at_12.33.32â¯PM.png",
+        "type": "image/png",
+        "uploadedAt": "2026-07-21T19:45:27.599Z"
+      },
+      "rooftop_gps": {
+        "id": "1784663131005-387514442-Screenshot_2026-07-22_at_12.21.34â¯AM.png",
+        "name": "Screenshot 2026-07-22 at 12.21.34â¯AM.png",
+        "url": "/uploads/1784663131005-387514442-Screenshot_2026-07-22_at_12.21.34â¯AM.png",
+        "type": "image/png",
+        "uploadedAt": "2026-07-21T19:45:31.007Z"
+      },
+      "house_front": {
+        "id": "1784663135740-903166715-Screenshot_2026-07-21_at_11.37.55â¯PM.png",
+        "name": "Screenshot 2026-07-21 at 11.37.55â¯PM.png",
+        "url": "/uploads/1784663135740-903166715-Screenshot_2026-07-21_at_11.37.55â¯PM.png",
+        "type": "image/png",
+        "uploadedAt": "2026-07-21T19:45:35.742Z"
+      },
+      "eb_meter": {
+        "id": "1784663140471-897767351-Screenshot_2026-07-21_at_12.33.32â¯PM.png",
+        "name": "Screenshot 2026-07-21 at 12.33.32â¯PM.png",
+        "url": "/uploads/1784663140471-897767351-Screenshot_2026-07-21_at_12.33.32â¯PM.png",
+        "type": "image/png",
+        "uploadedAt": "2026-07-21T19:45:40.472Z"
+      }
+    },
+    "systemSizeKw": 0.59,
+    "dailyGeneration": 3.24,
+    "annualGeneration": 1184,
+    "gstAmount": 8486.15,
+    "subsidyAmount": 17700,
+    "netCustomerCost": 86136,
+    "payments": [
+      {
+        "amount": 10500,
+        "date": "2026-07-21",
+        "mode": "UPI",
+        "utr": "njgcgyuhbnjk",
+        "receivedBy": "TheVoltaura Admin",
+        "remarks": "",
+        "proofUrl": "/uploads/1784663222651-649200099-Screenshot_2026-07-21_at_11.37.55â¯PM.png"
+      }
+    ],
+    "quotationId": "QTVA202627002",
+    "sourceQuotationId": "QTVA202627002"
+  }
+]

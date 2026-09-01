@@ -1,0 +1,209 @@
+[
+  {
+    "id": "ID-1",
+    "title": "Quotation Converted",
+    "desc": "Quotation QT-SS20260001 converted to invoice SS20260001",
+    "type": "success",
+    "link": "/view-invoice/SS20260001",
+    "read": false,
+    "createdAt": "2026-07-18T06:14:16.767Z"
+  },
+  {
+    "id": "ID-2",
+    "title": "Quotation Converted",
+    "desc": "Quotation QT-SS20260003 converted to invoice SS20260002",
+    "type": "success",
+    "link": "/view-invoice/SS20260002",
+    "read": false,
+    "createdAt": "2026-07-18T07:33:42.461Z"
+  },
+  {
+    "id": "ID-3",
+    "title": "Low Stock Alert",
+    "desc": "Low stock: DEYE 5kw 48v 1PH LV Hybrid Inverter -2MPPT/1String (5 remaining)",
+    "type": "warning",
+    "link": "/products",
+    "read": false,
+    "createdAt": "2026-07-18T10:16:35.455Z"
+  },
+  {
+    "id": "ID-4",
+    "title": "Out of Stock Alert",
+    "desc": "5KW ACDB -1 in 1 out 1PH 32Amps with Change over stock is empty",
+    "type": "danger",
+    "link": "/products",
+    "read": false,
+    "createdAt": "2026-07-18T10:18:35.459Z"
+  },
+  {
+    "id": "ID-5",
+    "title": "Out of Stock Alert",
+    "desc": "DCDB -2in 2 out -500v -2MCB/ 2SPD stock is empty",
+    "type": "danger",
+    "link": "/products",
+    "read": false,
+    "createdAt": "2026-07-18T10:19:35.461Z"
+  },
+  {
+    "id": "ID-6",
+    "title": "Out of Stock Alert",
+    "desc": "ACDB (1 - 5)KW stock is empty",
+    "type": "danger",
+    "link": "/products",
+    "read": false,
+    "createdAt": "2026-07-18T10:25:05.463Z"
+  },
+  {
+    "id": "ID-7",
+    "title": "Out of Stock Alert",
+    "desc": "LIGHTNING CABLE 3KW 2FLOOR WIRE stock is empty",
+    "type": "danger",
+    "link": "/products",
+    "read": false,
+    "createdAt": "2026-07-18T10:30:05.470Z"
+  },
+  {
+    "id": "ID-8",
+    "title": "Quotation Converted",
+    "desc": "Quotation QT-SS20260006 converted to invoice SS20260003",
+    "type": "success",
+    "link": "/view-invoice/SS20260003",
+    "read": false,
+    "createdAt": "2026-07-19T14:15:32.714Z"
+  },
+  {
+    "id": "ID-9",
+    "title": "Quotation Converted",
+    "desc": "Quotation QT-SS20260013 converted to invoice TVA202627001",
+    "type": "success",
+    "link": "/view-invoice/TVA202627001",
+    "read": false,
+    "createdAt": "2026-07-20T11:50:54.257Z"
+  },
+  {
+    "id": "ID-10",
+    "title": "Quotation Converted",
+    "desc": "Quotation QTVA202627001 converted to invoice TVA202627002",
+    "type": "success",
+    "link": "/view-invoice/TVA202627002",
+    "read": false,
+    "createdAt": "2026-07-21T11:19:26.731Z"
+  },
+  {
+    "id": "ID-11",
+    "title": "Order Confirmed",
+    "desc": "Quotation QT-SS20260008 has been confirmed. The project has been added to the Priority Orders queue.",
+    "type": "success",
+    "link": "/priority-orders",
+    "read": false,
+    "createdAt": "2026-07-21T18:36:11.624Z"
+  },
+  {
+    "id": "ID-12",
+    "title": "Order Confirmed",
+    "desc": "Quotation QTVA202627002 has been confirmed. The project has been added to the Priority Orders queue.",
+    "type": "success",
+    "link": "/priority-orders",
+    "read": false,
+    "createdAt": "2026-07-21T19:47:02.671Z"
+  },
+  {
+    "id": "ID-13",
+    "title": "Quotation Converted",
+    "desc": "Quotation QTVA202627002 converted to invoice TVA202627003",
+    "type": "success",
+    "link": "/view-invoice/TVA202627003",
+    "read": false,
+    "createdAt": "2026-07-21T19:47:09.434Z"
+  },
+  {
+    "id": "ID-14",
+    "title": "Order Confirmed",
+    "desc": "Quotation QTVA202627003 has been confirmed. The project has been added to the Priority Orders queue.",
+    "type": "success",
+    "link": "/priority-orders",
+    "read": false,
+    "createdAt": "2026-07-22T19:02:20.771Z"
+  },
+  {
+    "id": "NTF-15",
+    "createdAt": "2026-08-19T21:31:24.384Z",
+    "title": "Out of Stock Alert",
+    "desc": "550Wp, 610 Wp TopCon Half Cut DCR Bifacial Solar Panel – 24V  stock is empty",
+    "type": "danger",
+    "link": "/products",
+    "read": false
+  },
+  {
+    "id": "NTF-16",
+    "createdAt": "2026-08-19T21:32:24.384Z",
+    "title": "Out of Stock Alert",
+    "desc": "5kw Galvanized Iron Rooftop Structure – 45 ft wide × 3 ft 8 in deep | Slope angle: 10° | Back: 5 ft | Front: 6 ft stock is empty",
+    "type": "danger",
+    "link": "/products",
+    "read": false
+  },
+  {
+    "id": "NTF-17",
+    "createdAt": "2026-08-19T21:33:24.386Z",
+    "title": "Out of Stock Alert",
+    "desc": "Lightning Arrester – Copper ESE 5 Spikes, 17mm, 1 Meter | Lightning Arrester Cable: 25 mm² GI  stock is empty",
+    "type": "danger",
+    "link": "/products",
+    "read": false
+  },
+  {
+    "id": "NTF-18",
+    "createdAt": "2026-08-19T21:35:27.754Z",
+    "title": "Out of Stock Alert",
+    "desc": "ACDB Box (1 No) – AC SPD (1 No), AC MCB (1 No) 5KW stock is empty",
+    "type": "danger",
+    "link": "/products",
+    "read": false
+  },
+  {
+    "id": "NTF-19",
+    "createdAt": "2026-08-19T21:35:27.754Z",
+    "title": "Out of Stock Alert",
+    "desc": "DCDB Box (2 String, 1 No) – DC SPD (1 No), DC Fuse Holder + Fuse (2 Nos), DC MCB (2 Nos) 5kw stock is empty",
+    "type": "danger",
+    "link": "/products",
+    "read": false
+  },
+  {
+    "id": "NTF-20",
+    "createdAt": "2026-08-19T21:37:54.382Z",
+    "title": "Out of Stock Alert",
+    "desc": "Earthing Kit (Panel + Inverter) – Earthing Cable 6 mm² | Chemical Compound (25 kg)  stock is empty",
+    "type": "danger",
+    "link": "/products",
+    "read": false
+  },
+  {
+    "id": "NTF-21",
+    "createdAt": "2026-08-19T21:39:54.393Z",
+    "title": "Out of Stock Alert",
+    "desc": "Branded DC Cable 4 mm², 1500V DC, Red (+) / Black (−) | MC4 Connector – 30A, 1500V DC, IP67, UV Resistant stock is empty",
+    "type": "danger",
+    "link": "/products",
+    "read": false
+  },
+  {
+    "id": "NTF-22",
+    "createdAt": "2026-08-19T21:41:24.387Z",
+    "title": "Out of Stock Alert",
+    "desc": "Branded AC Cable 4 mm² | Earthing Cable 6 mm²  stock is empty",
+    "type": "danger",
+    "link": "/products",
+    "read": false
+  },
+  {
+    "id": "NTF-23",
+    "createdAt": "2026-08-19T21:41:24.387Z",
+    "title": "Out of Stock Alert",
+    "desc": "Accessories (Pins,Lugs,Fastners,ties,Electical PVC items)  stock is empty",
+    "type": "danger",
+    "link": "/products",
+    "read": false
+  }
+]

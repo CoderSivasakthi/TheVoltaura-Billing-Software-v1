@@ -1,0 +1,14 @@
+[
+  {
+    "id": "4d9b5a18-044f-485a-86db-0aaced36a7f5",
+    "entry_date": "2026-07-27T10:14:44.09+00:00",
+    "narration": "Payment PAYVA202627004",
+    "created_at": "2026-07-27T10:14:44.09+00:00"
+  },
+  {
+    "id": "fa4795e5-5b3e-418a-a2d9-2f93fff9fc20",
+    "entry_date": "2026-09-01T13:29:06.555323+00:00",
+    "narration": "Invoice INTVA202627004",
+    "created_at": "2026-09-01T13:29:06.491+00:00"
+  }
+]

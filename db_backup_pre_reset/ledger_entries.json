@@ -1,0 +1,18 @@
+[
+  {
+    "id": "ID-1",
+    "journal_id": "ID-1",
+    "account": "Cash",
+    "debit": 17700,
+    "credit": 0,
+    "created_at": "2026-07-19T17:32:35.536Z"
+  },
+  {
+    "id": "ID-2",
+    "journal_id": "ID-1",
+    "account": "AccountsReceivable",
+    "debit": 0,
+    "credit": 17700,
+    "created_at": "2026-07-19T17:32:35.536Z"
+  }
+]

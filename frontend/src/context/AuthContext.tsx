@@ -28,6 +28,8 @@ export interface AuthUser {
   tenant_id:      string
   franchise_id:   string | null
   franchise_name: string | null
+  franchise_address?: string | null
+  franchise_gst?: string | null
 }
 
 interface AuthContextValue {

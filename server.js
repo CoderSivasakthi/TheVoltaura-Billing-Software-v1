@@ -885,12 +885,14 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid Franchise ID' });
     }
 
+    let franchiseData = null;
     if (user.franchise_id) {
       try {
-        const { data: fr } = await supa.rawClient.from('franchises').select('status').eq('id', user.franchise_id).single();
+        const { data: fr } = await supa.rawClient.from('franchises').select('*').eq('id', user.franchise_id).single();
         if (fr && fr.status === 'Suspended') {
           return res.status(403).json({ error: 'Account suspended', message: 'Your franchise account has been suspended. Please contact TheVoltaura Head Office.' });
         }
+        franchiseData = fr;
       } catch (e) { /* non-fatal */ }
     }
 
@@ -905,6 +907,9 @@ app.post('/api/auth/login', async (req, res) => {
       role,
       tenant_id:   user.tenant_id   || 'admin', 
       franchise_id: user.franchise_id || null,
+      franchise_name: franchiseData?.name || null,
+      franchise_address: franchiseData?.branch_address || null,
+      franchise_gst: franchiseData?.gst_number || null
     };
     const token = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: '8h' });
     res.json({

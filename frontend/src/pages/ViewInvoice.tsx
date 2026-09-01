@@ -150,10 +150,10 @@ export default function ViewInvoice() {
     const companyData = {
         name: settings?.orgName || COMPANY.name,
         tagline: COMPANY.tagline,
-        address: settings?.branches?.[0]?.address || COMPANY.address,
+        address: inv?.companyAddress || inv?.company_address || settings?.branches?.[0]?.address || COMPANY.address,
         phone: settings?.phone || COMPANY.phone,
         email: settings?.email || COMPANY.email,
-        gst: settings?.branches?.[0]?.gst || COMPANY.gst,
+        gst: inv?.companyGst || inv?.company_gst || settings?.branches?.[0]?.gst || COMPANY.gst,
         dynamicLogo: settings?.logo || '/assets/company-logo.png'
     }
 

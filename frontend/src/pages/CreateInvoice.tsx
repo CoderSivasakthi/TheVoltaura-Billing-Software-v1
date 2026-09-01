@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { User, Settings, X, Plus, Copy, Save } from 'lucide-react'
 import { api, fmt, toast, displayName } from '../services/api'
 import { useSettings } from '../context/SettingsContext'
+import { useAuth } from '../context/AuthContext'
 import { SolarCalculationEngine, type LineItem } from '../services/SolarCalculationEngine'
 
 
@@ -11,8 +12,14 @@ export default function CreateInvoice() {
     const navigate = useNavigate()
     const { settings } = useSettings()
     const globalSettings = settings || {} as any
+    const { user } = useAuth()
     const [customers, setCustomers] = useState<any[]>([])
     const [products, setProducts] = useState<any[]>([])
+
+    // Company Information
+    const [companyBranchId, setCompanyBranchId] = useState('')
+    const [companyGst, setCompanyGst] = useState('')
+    const [companyAddress, setCompanyAddress] = useState('')
 
     // Form State
     const [customerId, setCustomerId] = useState('')
@@ -43,6 +50,18 @@ export default function CreateInvoice() {
         api('GET', '/api/customers').then(d => setCustomers(d || [])).catch(() => { })
         api('GET', '/api/products').then(d => setProducts(d || [])).catch(() => { })
     }, [])
+
+    useEffect(() => {
+        if (user?.franchise_id) {
+            setCompanyBranchId(user.franchise_id)
+            setCompanyGst(user.franchise_gst || '')
+            setCompanyAddress(user.franchise_address || '')
+        } else if (globalSettings && globalSettings.branches && globalSettings.branches.length > 0) {
+            setCompanyBranchId(globalSettings.branches[0].id)
+            setCompanyGst(globalSettings.branches[0].gst)
+            setCompanyAddress(globalSettings.branches[0].address)
+        }
+    }, [globalSettings, user])
 
     useEffect(() => {
         if (!customerId) return;
@@ -133,6 +152,9 @@ export default function CreateInvoice() {
 
         const cust = customers.find(c => c.id === customerId)
         const payload = {
+            companyBranchId,
+            companyGst,
+            companyAddress,
             customerId,
             customerName: displayName(cust?.name || cust),
             date,

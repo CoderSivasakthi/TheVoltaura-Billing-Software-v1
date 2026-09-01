@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { User, Save, X, Plus, Copy, Building, GripVertical, Trash2, CheckCircle } from 'lucide-react'
 import { api, apiUrl, fmt, toast, displayName } from '../services/api'
 import { useSettings } from '../context/SettingsContext'
+import { useAuth } from '../context/AuthContext'
 import DocumentUploader from '../components/DocumentUploader'
 import { SolarCalculationEngine, type LineItem } from '../services/SolarCalculationEngine'
 
@@ -16,9 +17,20 @@ export default function CreateQuotation() {
     const [customers, setCustomers] = useState<any[]>([])
     const [products, setProducts] = useState<any[]>([])
     const INVENTORY_CATEGORIES = ['Solar Panels', 'Inverters', 'Batteries', 'Electricals', 'Mounting', 'Earthing', 'Services', 'Accessories']
+    const CATEGORY_MAP: Record<string, string[]> = {
+        'Solar Panels': ['Solar Panel'],
+        'Inverters': ['On-Grid Inverter', 'Hybrid Inverter', 'Off-Grid Inverter'],
+        'Batteries': ['Battery', 'Battery Box'],
+        'Electricals': ['ACDB', 'DCDB', 'Lightning Arrester', 'DC Cable', 'AC Cable', 'MC4 Connector', 'PVC Pipe / Conduit'],
+        'Mounting': ['Mounting Structure'],
+        'Earthing': ['Earthing Rod', 'Earthing Chemical'],
+        'Services': ['Installation Service', 'Transportation', 'Maintenance'],
+        'Accessories': ['Other Accessories']
+    }
 
     const { settings } = useSettings()
     const globalSettings = settings || {} as any
+    const { user } = useAuth()
 
     // Form State - Customer Information & Document Collection (Section 0)
     const [skipCustomerInfo, setSkipCustomerInfo] = useState(false)
@@ -163,12 +175,18 @@ export default function CreateQuotation() {
 
     // Load Settings default branch if creating
     useEffect(() => {
-        if (!isEdit && globalSettings && globalSettings.branches && globalSettings.branches.length > 0) {
-            setCompanyBranch(globalSettings.branches[0].id)
-            setCompanyGst(globalSettings.branches[0].gst)
-            setCompanyAddress(globalSettings.branches[0].address)
+        if (!isEdit) {
+            if (user?.franchise_id) {
+                setCompanyBranch(user.franchise_id)
+                setCompanyGst(user.franchise_gst || '')
+                setCompanyAddress(user.franchise_address || '')
+            } else if (globalSettings && globalSettings.branches && globalSettings.branches.length > 0) {
+                setCompanyBranch(globalSettings.branches[0].id)
+                setCompanyGst(globalSettings.branches[0].gst)
+                setCompanyAddress(globalSettings.branches[0].address)
+            }
         }
-    }, [globalSettings, isEdit])
+    }, [globalSettings, isEdit, user])
 
     // Handle initial client selection and auto-populate data
     useEffect(() => {
@@ -759,9 +777,22 @@ export default function CreateQuotation() {
                                                     />
                                                     {activeDropdown === item.id && (
                                                         <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, backgroundColor: '#fff', border: '1px solid var(--g200)', borderRadius: '6px', maxHeight: '250px', overflowY: 'auto', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', marginTop: '4px' }}>
-                                                            {products
-                                                                .filter(p => (!item.category || (p.category || '') === item.category) && (p.name || '').toLowerCase().includes((item.productName || '').toLowerCase()))
-                                                                .map(p => (
+                                                            {(() => {
+                                                                const filtered = products.filter(p => {
+                                                                    if (item.category) {
+                                                                        const allowedCats = CATEGORY_MAP[item.category];
+                                                                        if (allowedCats && !allowedCats.includes(p.category || '')) return false;
+                                                                        if (!allowedCats && p.category !== item.category) return false;
+                                                                    }
+                                                                    if (item.productName && !(p.name || '').toLowerCase().includes(item.productName.toLowerCase())) return false;
+                                                                    return true;
+                                                                });
+                                                                
+                                                                if (filtered.length === 0) {
+                                                                    return <div style={{ padding: '8px 12px', fontSize: '13px', color: 'var(--g500)', textAlign: 'center' }}>No matching products found</div>;
+                                                                }
+                                                                
+                                                                return filtered.map(p => (
                                                                     <div 
                                                                         key={p.id} 
                                                                         style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid var(--g100)', fontSize: '13px', transition: 'background-color 0.1s' }}
@@ -776,10 +807,8 @@ export default function CreateQuotation() {
                                                                         <div style={{ fontWeight: 600, color: 'var(--g900)' }}>{p.name}</div>
                                                                         {p.category && <div style={{ fontSize: '11px', color: 'var(--g500)', marginTop: '2px' }}>{p.category}</div>}
                                                                     </div>
-                                                            ))}
-                                                            {products.filter(p => (!item.category || (p.category || '') === item.category) && (p.name || '').toLowerCase().includes((item.productName || '').toLowerCase())).length === 0 && (
-                                                                <div style={{ padding: '8px 12px', fontSize: '13px', color: 'var(--g500)', textAlign: 'center' }}>No matching products found</div>
-                                                            )}
+                                                                ));
+                                                            })()}
                                                         </div>
                                                     )}
                                                 </div>

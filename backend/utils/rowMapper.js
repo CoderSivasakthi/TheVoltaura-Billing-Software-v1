@@ -28,11 +28,12 @@ function mapToDb(payload) {
     if (value === undefined || typeof value === 'function') continue;
     if (DROP_KEYS.has(key)) continue;
     const mapped = toSnakeKey(key);
+    const finalValue = value === '' ? null : (isPlainObject(value) ? value : value);
     if (mapped === 'date') {
-      out.document_date = value;
+      out.document_date = finalValue;
       continue;
     }
-    out[mapped] = isPlainObject(value) ? value : value;
+    out[mapped] = finalValue;
   }
   return out;
 }

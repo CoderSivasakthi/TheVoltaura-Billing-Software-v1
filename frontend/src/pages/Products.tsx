@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Search, Plus, Package, AlertTriangle, Banknote, Star, Sun, Zap, Battery, Wrench, Pencil, Trash2 } from 'lucide-react'
 import { api, fmt, toast } from '../services/api'
 import { PaginationFooter, usePagination } from '../components/PaginationFooter'
+import { useAuth } from '../context/AuthContext'
 
 // Map the new categories to group them by top-level UI filters
 const FILTER_TABS = [
@@ -25,6 +26,9 @@ const getCatIcon = (cat: string) => {
 }
 
 export default function Products() {
+    const { user } = useAuth()
+    const isLogger = ['franchise_logger', 'franchise logger'].includes(user?.role?.toLowerCase() || '')
+
     const [products, setProducts] = useState<any[]>([])
     const [catFilter, setCatFilter] = useState('all')
     const [search, setSearch] = useState('')
@@ -115,7 +119,7 @@ export default function Products() {
                                 <th>Product Details</th>
                                 <th>Category / Type</th>
                                 <th>Stock & Unit</th>
-                                <th>Net Price</th>
+                                {!isLogger && <th>Net Price</th>}
                                 <th>Selling Price</th>
                                 <th>Status</th>
                                 <th>Actions</th>
@@ -123,7 +127,7 @@ export default function Products() {
                         </thead>
                         <tbody id="productsBody">
                             {paginated.length === 0 ? (
-                                <tr><td colSpan={7} className="empty-state">No products found</td></tr>
+                                <tr><td colSpan={isLogger ? 6 : 7} className="empty-state">No products found</td></tr>
                             ) : paginated.map((p: any) => {
                                 const Icon = getCatIcon(p.category || '')
                                 const isService = p.productType === 'Service Item'
@@ -164,7 +168,7 @@ export default function Products() {
                                                 </div>
                                             )}
                                         </td>
-                                        <td>{fmt(p.netPrice || 0)}</td>
+                                        {!isLogger && <td>{fmt(p.netPrice || 0)}</td>}
                                         <td><strong style={{ color: 'var(--g800)' }}>{fmt(p.sellingPrice || p.price || 0)}</strong></td>
                                         <td>
                                             {p.productStatus === 'Inactive' ? (

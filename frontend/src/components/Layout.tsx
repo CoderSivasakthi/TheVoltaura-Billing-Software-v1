@@ -69,6 +69,23 @@ export default function Layout() {
         return () => window.removeEventListener('auth-expired', handleAuthExpired);
     }, [auth, navigate]);
 
+    // Close sidebar on route change (mobile/tablet UX)
+    useEffect(() => {
+        setSidebarOpen(false);
+    }, [location.pathname]);
+
+    // Prevent accidental wheel-scroll on number inputs (Qty, Price, etc.)
+    useEffect(() => {
+        const handler = (e: WheelEvent) => {
+            const target = e.target as HTMLElement;
+            if (target && target.tagName === 'INPUT' && (target as HTMLInputElement).type === 'number') {
+                (target as HTMLInputElement).blur();
+            }
+        };
+        document.addEventListener('wheel', handler, { passive: true });
+        return () => document.removeEventListener('wheel', handler);
+    }, []);
+
     const [suppTab, setSuppTab] = useState('faq')
     const [faqExpanded, setFaqExpanded] = useState(false)
     const [fontSize, setFontSize] = useState(localStorage.getItem('sf_fontSize') || 'md')
@@ -180,6 +197,7 @@ export default function Layout() {
             if (e.key === 'Escape') {
                 setSupportOpen(false)
                 setSettingsOpen(false)
+                setSidebarOpen(false)
             }
         }
         document.addEventListener('keydown', handler)

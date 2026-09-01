@@ -724,7 +724,8 @@ export default function CreateQuotation() {
                             <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--g900)' }}>Technical Specifications & Items</div>
                         </div>
 
-                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                        <div className="li-tbl-wrap">
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', minWidth: '780px' }}>
                             <thead>
                                 <tr style={{ backgroundColor: 'var(--g100)', color: 'var(--g700)', textAlign: 'left', borderBottom: '1px solid var(--g200)' }}>
                                     <th style={{ padding: '12px 8px', width: '32px' }}></th>
@@ -854,6 +855,7 @@ export default function CreateQuotation() {
                                 ))}
                             </tbody>
                         </table>
+                        </div>{/* end li-tbl-wrap */}
 
                         <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-start' }}>
                             <button className="btn btn-secondary btn-sm" onClick={addItem}><Plus size={14} /> Add New Specification Row</button>

@@ -4,6 +4,7 @@ import { TrendingUp, Clock, Wrench, AlertTriangle, RefreshCw, FilePlus, UserPlus
 import { api, fmt, fmtDate, statusTag, displayName } from '../services/api'
 import { Chart, registerables } from 'chart.js'
 import { useAuth } from '../context/AuthContext'
+import { calculateFranchiseCommission } from '../config/businessRules'
 import SuperAdminDashboard from './SuperAdminDashboard'
 
 Chart.register(...registerables)
@@ -108,30 +109,14 @@ function FranchiseDashboard() {
             // Franchise Payments & Commission
             const cList = customers || [];
             const qList = quotations || [];
-            const leadCount = cList.filter((c: any) => c.status === 'Lead').length;
-            const leadPayment = leadCount * 200;
-            
-            let clientCount = 0;
-            let clientComm = 0;
-            const clients = cList.filter((c: any) => c.status !== 'Lead');
-            clients.forEach((client: any) => {
-                clientCount++;
-                const clientQuotes = qList.filter((q: any) => q.customer_id === client.id || q.customerId === client.id || q.customerCode === client.customerCode || (q.customer && q.customer.id === client.id));
-                let totalKw = 0;
-                if (clientQuotes.length > 0) {
-                     totalKw = clientQuotes.reduce((sum: number, q: any) => sum + (parseFloat(q.systemSizeKw) || parseFloat(q.system_size_kw) || 0), 0);
-                }
-                if (totalKw >= 1) {
-                    clientComm += Math.floor(totalKw) * 2000;
-                }
-            });
+            const comm = calculateFranchiseCommission(cList, qList);
             
             setFranchiseComm({
-                leadCount,
-                leadPayment: fmt(leadPayment),
-                clientCount,
-                clientComm: fmt(clientComm),
-                totalEarnings: fmt(leadPayment + clientComm)
+                leadCount: comm.leadCount,
+                leadPayment: fmt(comm.leadPayment),
+                clientCount: comm.clientCount,
+                clientComm: fmt(comm.clientComm),
+                totalEarnings: fmt(comm.totalEarnings)
             });
 
             // Recent invoices (last 5)

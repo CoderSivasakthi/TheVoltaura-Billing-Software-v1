@@ -5,6 +5,7 @@ import { api, fmt, toast, displayName } from '../services/api'
 import { useSettings } from '../context/SettingsContext'
 import { useAuth } from '../context/AuthContext'
 import { SolarCalculationEngine, type LineItem } from '../services/SolarCalculationEngine'
+import { BUSINESS_RULES } from '../config/businessRules'
 
 
 
@@ -38,7 +39,7 @@ export default function CreateInvoice() {
 
     // Form State - Items
     const ITEM_CATEGORIES = ['Panels', 'Inverters', 'Batteries', 'Connectors', 'Earthing', 'Mounting Structures', 'Lighting', 'Meters', 'Services', 'Others']
-    const [items, setItems] = useState<LineItem[]>([{ id: '1', productId: '', productName: '', qty: 1, price: 0, gstRate: 18, hsnCode: '' }])
+    const [items, setItems] = useState<LineItem[]>([{ id: '1', productId: '', productName: '', qty: 1, price: 0, gstRate: BUSINESS_RULES.GST.defaultRate, hsnCode: '' }])
     const [itemCategories, setItemCategories] = useState<string[]>(['']) // one per item row, '' = show all
 
     // Form State - Calculations
@@ -79,7 +80,7 @@ export default function CreateInvoice() {
 
     // Item Management
     const addItem = () => {
-        setItems([...items, { id: Math.random().toString(), productId: '', productName: '', qty: 1, price: 0, gstRate: 18, hsnCode: '' }])
+        setItems([...items, { id: Math.random().toString(), productId: '', productName: '', qty: 1, price: 0, gstRate: BUSINESS_RULES.GST.defaultRate, hsnCode: '' }])
         setItemCategories([...itemCategories, ''])
     }
     const copyItem = (i: number) => {
@@ -107,10 +108,10 @@ export default function CreateInvoice() {
                         }
                     }
                 }
-                const gstRate = Number(prod.gstRate || globalSettings.gstRate || 18)
+                const gstRate = Number(prod.gstRate || globalSettings.gstRate || BUSINESS_RULES.GST.defaultRate)
                 newItems[i] = { ...newItems[i], productId: val, productName: prod.name || '', price: Number(prod.sellingPrice || prod.price || 0), gstRate, hsnCode }
             } else {
-                newItems[i] = { ...newItems[i], productId: '', productName: '', price: 0, gstRate: Number(globalSettings.gstRate || 18), hsnCode: '' }
+                newItems[i] = { ...newItems[i], productId: '', productName: '', price: 0, gstRate: Number(globalSettings.gstRate || BUSINESS_RULES.GST.defaultRate), hsnCode: '' }
             }
         } else if (field === 'productName') {
             newItems[i].productName = val;
@@ -320,8 +321,8 @@ export default function CreateInvoice() {
                                             </td>
                                             <td style={{ padding: '12px' }}>
                                                 <select style={s_input} value={it.gstRate} onChange={e => updateItem(i, 'gstRate', e.target.value)}>
-                                                    {(globalSettings?.taxRates || [{ id: '1', rate: 18, label: '18%' }]).map((t: any) => (
-                                                        <option key={t.id} value={t.rate}>{t.rate}%</option>
+                                                    {BUSINESS_RULES.GST.availableRates.map(rate => (
+                                                        <option key={rate} value={rate}>{rate}%</option>
                                                     ))}
                                                 </select>
                                             </td>

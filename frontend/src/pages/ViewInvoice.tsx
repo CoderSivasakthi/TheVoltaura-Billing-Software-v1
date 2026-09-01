@@ -6,6 +6,7 @@ import { useSettings } from '../context/SettingsContext'
 import { useAuth } from '../context/AuthContext'
 import ERPDocumentHeader from '../components/ERPDocumentHeader'
 import ClassicInvoiceTemplate from '../components/ClassicInvoiceTemplate'
+import { BUSINESS_RULES } from '../config/businessRules'
 
 const COMPANY = {
     name: 'THEVOLTAURA PRIVATE LTD',
@@ -221,13 +222,13 @@ export default function ViewInvoice() {
     let totalTaxCalculated = 0;
 
     items.forEach((it) => {
-        const hsn = String(it.hsn || it.hsnCode || '').trim() || '8541'
+        const hsn = String(it.hsn || it.hsnCode || '').trim() || BUSINESS_RULES.GST.hsnPanelCode
         const lineAmt = Number(it.qty || 1) * Number(it.price || 0)
         let rate = Number(it.gstRate || 0);
 
         // Fallback or custom splits based on requirements
-        if (rate === 0 && hsn === '8541') rate = 5;
-        if (rate === 0 && hsn !== '8541') rate = 18;
+        if (rate === 0 && hsn === BUSINESS_RULES.GST.hsnPanelCode) rate = BUSINESS_RULES.GST.hsnPanelFallbackRate;
+        if (rate === 0 && hsn !== BUSINESS_RULES.GST.hsnPanelCode) rate = BUSINESS_RULES.GST.hsnOtherFallbackRate;
 
         if (!hsnMap[hsn]) hsnMap[hsn] = { taxable: 0, rate }
         hsnMap[hsn].taxable += lineAmt

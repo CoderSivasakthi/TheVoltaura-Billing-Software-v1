@@ -1,4 +1,11 @@
 import { numberToWords } from './api';
+import {
+    BUSINESS_RULES,
+    calculateSubsidy,
+    calculateSolarGeneration,
+    calculateMnreSplitGst,
+    generatePaymentTermsText,
+} from '../config/businessRules';
 
 export interface LineItem {
     id?: string;
@@ -36,27 +43,27 @@ export interface CalculationResult {
 }
 
 export class SolarCalculationEngine {
-    
+
     /**
      * Extracts wattage from product name and computes total System Size in kW.
      * Example: "Solar Panel 550Wp" x 6 -> 3.30 kW
      */
     static calculateSystemSize(items: LineItem[]): number {
         let totalWatts = 0;
-        
+
         for (const item of items) {
             const searchStr = `${item.productName || ''} ${item.description || ''}`.toLowerCase();
-            
+
             const isPanel = searchStr.includes('panel') || searchStr.includes('module') || searchStr.includes('pv');
-            
+
             // Try to extract wattage e.g., 550W, 540Wp, 550 W
             let match = searchStr.match(/(\d+)\s*(w|wp|watt|watts)\b/i);
-            
+
             if (!match && isPanel) {
                 // Try to find a 3-digit or 4-digit number that likely represents wattage (e.g. PANEL 550)
                 match = searchStr.match(/\b(\d{3,4})\b/);
             }
-            
+
             if (isPanel && match) {
                 const watts = parseInt(match[1], 10);
                 if (!isNaN(watts)) {
@@ -64,57 +71,46 @@ export class SolarCalculationEngine {
                 }
             }
         }
-        
+
         return Number((totalWatts / 1000).toFixed(2));
     }
 
     /**
-     * Daily generation based on average (5.0 units per kW).
+     * Daily generation based on the centralized generation factor
+     * (BUSINESS_RULES.SOLAR.generationFactorPerKwPerDay units per kW).
      */
     static calculateDailyGeneration(systemSizeKw: number): number {
-        return Number((systemSizeKw * 5.0).toFixed(2));
+        return Number((systemSizeKw * BUSINESS_RULES.SOLAR.generationFactorPerKwPerDay).toFixed(2));
     }
 
     /**
-     * Annual generation based on daily generation (365 days).
+     * Annual generation based on daily generation * BUSINESS_RULES.SOLAR.daysPerYear.
      */
     static calculateAnnualGeneration(dailyGeneration: number): number {
-        return Math.round(dailyGeneration * 365);
+        return Math.round(dailyGeneration * BUSINESS_RULES.SOLAR.daysPerYear);
     }
 
     /**
-     * Tiered MNRE Subsidy Calculation
-     * 1 kW = 30k
-     * 2 kW = 60k
-     * >= 3 kW = 78k (Max)
+     * Tiered MNRE Subsidy Calculation — delegates to the centralized
+     * calculateSubsidy() function from businessRules.ts.
      */
     static calculateSubsidy(systemSizeKw: number): number {
-        if (systemSizeKw <= 0) return 0;
-        if (systemSizeKw >= 3) return 78000;
-        
-        if (systemSizeKw >= 2) {
-            if (systemSizeKw === 2) return 60000;
-            // E.g. 2.5 kW -> 60000 + (0.5 * 18000) = 69000
-            return Math.min(78000, 60000 + (systemSizeKw - 2) * 18000);
-        } else {
-            return systemSizeKw * 30000;
-        }
+        return calculateSubsidy(systemSizeKw);
     }
 
     /**
      * Full business calculation logic for a document (Quotation/Invoice).
      */
     static calculateDocument(
-        items: LineItem[], 
-        discount: number = 0, 
-        splitGst: boolean = true, 
+        items: LineItem[],
+        discount: number = 0,
+        splitGst: boolean = true,
         roundOff: boolean = true
     ): CalculationResult {
-        
+
         const systemSizeKw = this.calculateSystemSize(items);
-        const dailyGeneration = this.calculateDailyGeneration(systemSizeKw);
-        const annualGeneration = this.calculateAnnualGeneration(dailyGeneration);
-        const subsidyAmount = this.calculateSubsidy(systemSizeKw);
+        const { dailyGeneration, annualGeneration } = calculateSolarGeneration(systemSizeKw);
+        const subsidyAmount = calculateSubsidy(systemSizeKw);
 
         let subtotal = 0;
         let totalGst = 0;
@@ -128,23 +124,16 @@ export class SolarCalculationEngine {
         const taxableAmount = Math.max(0, subtotal - discount);
 
         if (splitGst) {
-            // MNRE Split GST logic: 70% @ 5%, 30% @ 18%
-            const part5 = taxableAmount * 0.70;
-            const part18 = taxableAmount * 0.30;
-            
-            const tax5 = part5 * 0.05;
-            const tax18 = part18 * 0.18;
-            
-            totalGst = tax5 + tax18; // Effective 8.9%
-            
-            gstBreakdown.cgst5 = tax5 / 2;
-            gstBreakdown.sgst5 = tax5 / 2;
-            gstBreakdown.cgst18 = tax18 / 2;
-            gstBreakdown.sgst18 = tax18 / 2;
+            // MNRE Split GST — rates sourced from BUSINESS_RULES.GST
+            const result = calculateMnreSplitGst(taxableAmount);
+            totalGst = result.totalGst;
+            gstBreakdown.cgst5  = result.cgst5;
+            gstBreakdown.sgst5  = result.sgst5;
+            gstBreakdown.cgst18 = result.cgst18;
+            gstBreakdown.sgst18 = result.sgst18;
         } else {
-            // Standard GST logic (per item)
-            // Note: Since discount applies to the total, we must distribute standard GST proportionally if there is a discount.
-            // For simplicity, we assume Standard GST applies the item's individual gstRate.
+            // Standard GST logic (per item gstRate)
+            // Since discount applies to the total, distribute GST proportionally.
             for (const item of items) {
                 const itemTotal = item.qty * item.price;
                 const ratio = subtotal > 0 ? (itemTotal / subtotal) : 0;
@@ -163,7 +152,7 @@ export class SolarCalculationEngine {
         }
 
         const netCustomerCost = grandTotal - subsidyAmount;
-        
+
         const amountInWords = numberToWords(grandTotal);
 
         return {
@@ -179,24 +168,16 @@ export class SolarCalculationEngine {
             roundOffAmount,
             netCustomerCost,
             amountInWords,
-            paymentTermsText: this.generatePaymentTerms(grandTotal)
+            paymentTermsText: this.generatePaymentTerms(grandTotal),
         };
     }
 
     /**
      * Generate standard payment terms breakdown.
+     * Delegates to the centralized generatePaymentTermsText() from businessRules.ts.
+     * Percentages are sourced from BUSINESS_RULES.PAYMENT_TERMS.
      */
     static generatePaymentTerms(grandTotal: number): string {
-        if (grandTotal <= 0) return '';
-        
-        const advance = Math.round(grandTotal * 0.10);
-        const delivery = Math.round(grandTotal * 0.70);
-        const installation = Math.round(grandTotal * 0.10);
-        const commissioning = grandTotal - advance - delivery - installation; // Ensure it adds up perfectly
-
-        return `10% Advance: ₹${advance.toLocaleString('en-IN')}\n` +
-               `70% Upon Material Delivery: ₹${delivery.toLocaleString('en-IN')}\n` +
-               `10% Upon Installation: ₹${installation.toLocaleString('en-IN')}\n` +
-               `10% Upon Commissioning: ₹${commissioning.toLocaleString('en-IN')}`;
+        return generatePaymentTermsText(grandTotal);
     }
 }

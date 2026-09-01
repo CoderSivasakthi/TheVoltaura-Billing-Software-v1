@@ -6,6 +6,7 @@ import { useSettings } from '../context/SettingsContext'
 import { useAuth } from '../context/AuthContext'
 import DocumentUploader from '../components/DocumentUploader'
 import { SolarCalculationEngine, type LineItem } from '../services/SolarCalculationEngine'
+import { BUSINESS_RULES } from '../config/businessRules'
 
 
 
@@ -73,7 +74,7 @@ export default function CreateQuotation() {
     const [items, setItems] = useState<LineItem[]>(() => {
         return Array.from({ length: 12 }).map((_, i) => ({
             id: `row-${i + 1}-${Math.random().toString(36).substring(2,9)}`,
-            productId: '', productName: '', qty: 1, price: 0, gstRate: 18, hsnCode: '', description: ''
+            productId: '', productName: '', qty: 1, price: 0, gstRate: BUSINESS_RULES.GST.defaultRate, hsnCode: '', description: ''
         }))
     })
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
@@ -138,8 +139,8 @@ export default function CreateQuotation() {
                             productName: it.productName || it.name || '',
                             qty: Number(it.quantity || it.qty || 1),
                             price: Number(it.price || it.rate || 0),
-                            gstRate: Number(it.gstRate || 18),
-                            hsnCode: it.hsnCode || '',
+                            gstRate: Number(it.gstRate || BUSINESS_RULES.GST.defaultRate),
+                            hsnCode: String(it.hsnCode || it.hsn || ''),
                             description: it.description || ''
                         })))
                     }
@@ -308,7 +309,7 @@ export default function CreateQuotation() {
 
     // Item Management
     const addItem = () => {
-        setItems([...items, { id: `row-${items.length + 1}-${Math.random().toString(36).substring(2,9)}`, productId: '', productName: '', qty: 1, price: 0, gstRate: 18, hsnCode: '', description: '' }])
+        setItems([...items, { id: `row-${items.length + 1}-${Math.random().toString(36).substring(2,9)}`, productId: '', productName: '', qty: 1, price: 0, gstRate: BUSINESS_RULES.GST.defaultRate, hsnCode: '', description: '' }])
     }
     const copyItem = (i: number) => {
         const newItems = [...items]
@@ -361,7 +362,7 @@ export default function CreateQuotation() {
                         }
                     }
                 }
-                const gstRate = Number(prod.gstRate || globalSettings.gstRate || 18)
+                const gstRate = Number(prod.gstRate || globalSettings.gstRate || BUSINESS_RULES.GST.defaultRate)
                 newItems[i] = { 
                     ...newItems[i], 
                     productId: val, 
@@ -374,16 +375,16 @@ export default function CreateQuotation() {
                     unit: prod.unit || 'Nos'
                 }
             } else {
-                newItems[i] = { ...newItems[i], productId: '', productName: '', price: 0, gstRate: Number(globalSettings.gstRate || 18), hsnCode: '', description: '', technicalSpecification: '', unit: 'Nos' }
+                newItems[i] = { ...newItems[i], productId: '', productName: '', price: 0, gstRate: Number(globalSettings.gstRate || BUSINESS_RULES.GST.defaultRate), hsnCode: '', description: '', technicalSpecification: '', unit: 'Nos' }
             }
         } else if (field === 'productName') {
             newItems[i].productName = val;
             
             const prod = products.find(p => p.name === val)
             if (prod) {
-                newItems[i].productId = prod.id;
                 newItems[i].price = Number(prod.sellingPrice || prod.price || 0);
-                newItems[i].gstRate = Number(prod.gstRate || globalSettings.gstRate || 18);
+                newItems[i].gstRate = Number(prod.gstRate || globalSettings.gstRate || BUSINESS_RULES.GST.defaultRate);
+                newItems[i].productId = prod.id;
                 newItems[i].description = prod.description || '';
                 newItems[i].technicalSpecification = prod.technicalSpecification || '';
                 newItems[i].unit = prod.unit || 'Nos';
@@ -838,11 +839,9 @@ export default function CreateQuotation() {
                                         </td>
                                         <td style={{ padding: '12px 8px', verticalAlign: 'top' }}>
                                             <select style={s_input} value={item.gstRate} onChange={e => updateItem(idx, 'gstRate', e.target.value)}>
-                                                <option value="0">0%</option>
-                                                <option value="5">5%</option>
-                                                <option value="12">12%</option>
-                                                <option value="18">18%</option>
-                                                <option value="28">28%</option>
+                                                {BUSINESS_RULES.GST.availableRates.map(rate => (
+                                                    <option key={rate} value={rate}>{rate}%</option>
+                                                ))}
                                             </select>
                                         </td>
                                         <td style={{ padding: '12px 8px', verticalAlign: 'top', textAlign: 'center' }}>

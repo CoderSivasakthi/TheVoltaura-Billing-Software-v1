@@ -671,6 +671,8 @@ function seedLocalDataIfNeeded() {
 seedLocalDataIfNeeded();
 
 async function readDataFile(fileName) {
+  // Allow JSON fallback if Supabase is not reachable (even in production).
+  // supabaseOnline() now returns false when network errors have been detected.
   if (process.env.NODE_ENV === 'production' && supabaseOnline()) {
     throw new Error(`Database operation failed. Fallback to local JSON is disabled in production for ${fileName}.`);
   }
@@ -688,6 +690,7 @@ async function readDataFile(fileName) {
 }
 
 async function writeDataFile(fileName, data) {
+  // Allow JSON fallback if Supabase is not reachable (even in production).
   if (process.env.NODE_ENV === 'production' && supabaseOnline()) {
     throw new Error(`Database operation failed. Fallback to local JSON is disabled in production for ${fileName}.`);
   }
@@ -928,10 +931,13 @@ app.post('/api/auth/login', async (req, res) => {
 });
 
 function requireAuth(req, res, next) {
-  const token = req.headers['authorization'] || req.headers['x-demo-auth'];
-  if (!token) return res.status(401).json({ error: 'Missing auth token' });
-  const raw = token.toString().replace(/^Bearer\s+/i, '');
-  
+  // Accept token from Authorization: Bearer <token> OR x-demo-auth: <token>
+  const authHeader = req.headers['authorization'] || req.headers['x-demo-auth'] || '';
+  if (!authHeader) return res.status(401).json({ error: 'Missing auth token' });
+  const raw = authHeader.toString().replace(/^Bearer\s+/i, '').trim();
+  if (!raw) return res.status(401).json({ error: 'Missing auth token' });
+
+  // Allow the static demo token for quick dev/testing
   if (raw === DEMO_TOKEN) {
     req.user = { username: 'admin', role: 'super_admin', tenant_id: 'admin', franchise_id: null };
     req.tenant = { id: 'admin', franchise_id: null, role: 'super_admin', username: 'admin', is_super_admin: true, is_franchise_admin: false, is_franchise_staff: false };
@@ -958,7 +964,8 @@ function requireAuth(req, res, next) {
     };
     return next();
   } catch (e) {
-    return res.status(403).json({ error: 'Invalid token' });
+    // Return 401 (not 403) so the frontend auth-expired handler fires correctly
+    return res.status(401).json({ error: 'Invalid or expired token. Please log in again.' });
   }
 }
 

@@ -13,13 +13,28 @@ const SERVICE_KEY   = String(process.env.SUPABASE_SERVICE_KEY || process.env.SUP
 
 let supabase = null;
 
+// ── Reachability tracking ────────────────────────────────────────────
+// When Supabase returns network errors, mark it unreachable for 60s so
+// server.js falls back to local JSON without throwing in production.
+let _reachable = true;
+let _unreachableUntil = 0;
+const UNREACHABLE_COOLDOWN_MS = 60_000;
+
 function isAvailable() {
-  return Boolean(supabase);
+  if (!supabase) return false;
+  if (!_reachable && Date.now() < _unreachableUntil) return false;
+  // Reset after cooldown
+  if (!_reachable && Date.now() >= _unreachableUntil) {
+    _reachable = true;
+  }
+  return true;
 }
 
 function markUnreachable(reason) {
   const msg = reason && reason.message ? reason.message : String(reason || 'network error');
-  console.warn('[supabaseRepo] Transient Supabase error:', msg.replace(/https?:\/\/[^\s]+/g, '[url]'));
+  console.warn('[supabaseRepo] Supabase unreachable (will retry in 60s):', msg.replace(/https?:\/\/[^\s]+/g, '[url]'));
+  _reachable = false;
+  _unreachableUntil = Date.now() + UNREACHABLE_COOLDOWN_MS;
 }
 
 if (SUPABASE_URL && SERVICE_KEY) {
